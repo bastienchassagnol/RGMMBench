@@ -1,3 +1,16 @@
+#' Plot the boxplot representation of the estimated parameters
+#'
+#' @author Bastien CHASSAGNOL
+#'
+#' @param distribution_parameters the estimated bootstrap distributions
+#' @param p,mu,sigma the true values of the parameters
+#' @param with_outliers boolean: remove or not outlying estimates
+#'
+#' @return boxplot_parameters a ggplot object representing the boxplot distributions of the estimates per package and initialisation algorithm
+#'
+#' @export
+
+
 plot_boxplots_parameters <- function(distribution_parameters, p, mu, sigma, with_outliers = FALSE) {
 
   # format true theta values, according to their use
@@ -48,6 +61,16 @@ plot_boxplots_parameters <- function(distribution_parameters, p, mu, sigma, with
 }
 
 
+#' Plot the running time of the initialisation methods
+#'
+#' @author Bastien CHASSAGNOL
+#'
+#' @param init_time_data the running time data
+#'
+#' @return initialisation_time_plots a ggplot object representing the running time curve distributions of the initialisation algorithms
+#'
+#' @export
+
 plot_initialisation_time_computations <- function(init_time_data) {
 
   # get quantiles of the distribution
@@ -81,6 +104,16 @@ plot_initialisation_time_computations <- function(init_time_data) {
     labs(x = "Number of observations (log10)", y = "Time in seconds (log10)")
   return(initialisation_time_plots)
 }
+
+#' Plot the running time of the reviewed packages
+#'
+#' @author Bastien CHASSAGNOL
+#'
+#' @param init_time_data the running time data associated to the EM estimation performed by the reviewed packages
+#'
+#' @return time_plots a ggplot object representing the running time curve distributions of the reviewed packages
+#'
+#' @export
 
 plot_time_computations <- function(time_data) {
   time_data_summary <- time_data %>%

@@ -1,8 +1,16 @@
-#################################################################
-##                      sample generation                      ##
-#################################################################
+#' Generation of a mixture drawn from an univariate GMM, with possibility to add outliers and skewness
+#'
+#' @author Bastien CHASSAGNOL
+#'
+#' @param n the number of observations to be drawn
+#' @param theta a list with 4 entries, corresponding to the true values of the parameters (proportion p, mean mu, deviation sigma, skewness skew)
+#' @param prop_outliers, interval the proportion of outliers in the mixture, and its range respective to the 0.05 and 0.95 quantiles of the global distribution
+#'
+#' @return a list with the number of components k, the true parameters p, mu, sigma, skew, the observed variables x, the hidden observations s and an indicator of the outliers s_outliers
+#'
+#' @export
 
-# generation of a mixture Gaussian model, with outliers, and possibility of adding skewness
+
 rnmix_skewed_with_outliers <- function(n,
                                        theta = list(p = c(0.40, 0.60), mu = c(175, 165), sigma = c(10, 12), skew = c(0, 0)),
                                        prop_outliers = 0, interval = 2) {
@@ -41,11 +49,21 @@ rnmix_skewed_with_outliers <- function(n,
 }
 
 
-##################################################################
-##                        initialization                        ##
-##################################################################
+#'  Global function to launch the initialisation step of the EM algorithm
+#'
+#' @author Bastien CHASSAGNOL
+#'
+#' @param x the vector of the observations
+#' @param k the number of components
+#' @param n_start the number of random restarts with kmeans, random and small EM method
+#' @param short_iter,short_eps hyperparameters of the small EM method
+#' @param initialisation_algorithm the choice of the initialisation method, between kmeans, quantiles, random, hc, small em and rebmix method
+#'
+#' @return a list of the estimated parameters, ordered by increasing mean for identifiability issues
+#'
+#' @export
 
-initialize_em <- function(x = NULL, k = 2, nstart = 10L, short_iter = 200, short_eps = 10^-2, Nsem = 100, prior_prob = 0.05,
+initialize_em <- function(x = NULL, k = 2, nstart = 10L, short_iter = 200, short_eps = 10^-2, prior_prob = 0.05,
                           initialisation_algorithm = c("kmeans", "quantiles", "random", "hc", "small em", "rebmix"), ...) {
   if (is.null(x)) {
     stop("Please provide data for x.")
@@ -155,13 +173,23 @@ initialize_em <- function(x = NULL, k = 2, nstart = 10L, short_iter = 200, short
 
 
 
-##################################################################
-##            Packages implementing the EM algorithm            ##
-##################################################################
+#'  Custom R implementation of the EM algorithm
+#'
+#' @author Bastien CHASSAGNOL
+#'
+#' @param x the vector of the observations
+#' @param k the number of components
+#' @param itmax the maximal number of iterations to reach the threshold
+#' @param start list of initial estimates provided by the user
+#' @param initialisation_algorithm,nstart hyperparameters, when the user rather uses one of our implemented initialisation algorithms
+#'
+#' @return a list of the estimated parameters, ordered by increasing mean for identifiability issues
+#'
+#' @export
 
 
 
-# custom R implementation of the EM algorithm
+
 emnmix <- function(x, k, itmax = 5000, epsilon = 10^-12, nstart = 10L, start = NULL,
                    initialisation_algorithm = "kmeans", ...) {
 
@@ -224,7 +252,7 @@ emnmix <- function(x, k, itmax = 5000, epsilon = 10^-12, nstart = 10L, start = N
 
 
 
-# em algorithm for mixture models using Rmixmod
+#' @describeIn emnmix EM implementation with Rmixmod package
 em_Rmixmod <- function(x = x, k = 2, initialisation_algorithm = "kmeans",
                        itmax = 5000, epsilon = 10^-12, start = NULL, ...) {
 
@@ -271,7 +299,8 @@ em_Rmixmod <- function(x = x, k = 2, initialisation_algorithm = "kmeans",
 }
 
 
-# em algorithm for mixture models using EMCluster
+#' @describeIn emnmix EM implementation with EMCluster package
+
 em_EMCluster <- function(x = x, k = 2, initialisation_algorithm = "kmeans",
                          itmax = 5000, epsilon = 10^-12, start = NULL, ...) {
 
@@ -310,8 +339,8 @@ em_EMCluster <- function(x = x, k = 2, initialisation_algorithm = "kmeans",
 
 
 
+#' @describeIn emnmix EM implementation with bgmm package
 
-# em algorithm for mixture models using bgmm
 em_bgmm <- function(x = x, k = 2, itmax = 5000, epsilon = 10^-12,
                     initialisation_algorithm = "kmeans", start = NULL, ...) {
 
@@ -352,7 +381,8 @@ em_bgmm <- function(x = x, k = 2, itmax = 5000, epsilon = 10^-12,
 }
 
 
-# em algorithm for mixture models using flexmix
+#' @describeIn emnmix EM implementation with flexmix package
+
 em_flexmix <- function(x = x, k = 2, itmax = 5000, epsilon = 10^-12,
                        initialisation_algorithm = "kmeans", start = NULL, ...) {
 
@@ -390,7 +420,8 @@ em_flexmix <- function(x = x, k = 2, itmax = 5000, epsilon = 10^-12,
 }
 
 
-# em algorithm for mixture models using mixtools package
+#' @describeIn emnmix EM implementation with mixtools package
+
 em_mixtools <- function(x = x, k = 2, initialisation_algorithm = "hc",
                         itmax = 5000, epsilon = 10^-12, start = NULL, ...) {
   # initialization section
@@ -446,7 +477,8 @@ em_mclust <- function(x = x, k = 2, initialisation_algorithm = "hc", start = NUL
 }
 
 
-# em algorithm for mixture models using DCEM package
+#' @describeIn emnmix EM implementation with DCEM package
+
 em_DCEM <- function(x = x, k = 2, initialisation_algorithm = "hc",
                     itmax = 5000, epsilon = 10^-12, start = NULL, ...) {
   # initialization section
@@ -500,7 +532,7 @@ em_GMKMcharlie <- function(x = x, k = 2, initialisation_algorithm = "hc",
 }
 
 
-##### additional packages extending main limitations of GMMs  #####
+#' @describeIn emnmix EM implementation with otrimle package (designed to deal with outliers especially)
 
 # em algorithm for mixture models using otrimle package
 em_otrimle <- function(x = x, k = 2, initialisation_algorithm = "hc",
@@ -529,7 +561,8 @@ em_otrimle <- function(x = x, k = 2, initialisation_algorithm = "hc",
 }
 
 
-# em algorithm for skewed distributions using mixsmsn package
+#' @describeIn emnmix EM implementation with mixsmsn package (designed to deal with skewed GMMs especially)
+
 em_mixsmsn <- function(x = x, k = 2, initialisation_algorithm = "hc", skew = rep(0, k),
                        itmax = 5000, epsilon = 10^-12, start = NULL, ...) {
   if (is.null(start)) {
@@ -573,9 +606,17 @@ em_mixsmsn <- function(x = x, k = 2, initialisation_algorithm = "hc", skew = rep
 
 
 
-##################################################################
-##                       helper functions                       ##
-##################################################################
+#' Estimate the parameters in supervised case (all labels associated to the observations are available)
+#'
+#' @author Bastien CHASSAGNOL
+#'
+#' @param simulated_distribution the object returned by generating a sample drawn from a GMM
+#'
+#' @return observed_estimated_theta a list of the estimated parameters in supervised case
+#'
+#' @seealso  \code{\link{rnmix_skewed_with_outliers}}
+#'
+#' @export
 
 # retrieve the parameters, when the latent variable S is observed
 compute_parameters_complete_observations <- function(simulated_distribution) {
@@ -623,7 +664,8 @@ compute_parameters_complete_observations <- function(simulated_distribution) {
 }
 
 
-# compute efficiently log(sum(exp(l)))
+
+
 logsumexp <- function(l) {
   i <- which.max(l)
   res <- l[i] + log1p(sum(exp(l[-i] - l[i])))
@@ -675,6 +717,16 @@ check_parameters_validity <- function(estimated_theta, k = 2) {
     return(TRUE)
   }
 }
+
+
+
+#' Compute the shannon entropy of a discrete distribution, normalised from 0 to 1 (equibalanced classes)
+#'
+#' @author Bastien CHASSAGNOL
+#'
+#' @param ratios vector of the proportions of the mixture
+#' @return the entropy score
+#' @export
 
 
 compute_shannon_entropy <- function(ratios) {

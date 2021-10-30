@@ -1,6 +1,24 @@
+#' Launch the benchmark to compare statistical performances between packages
+#'
+#' @author Bastien CHASSAGNOL
+#'
+#' @param mixture_functions List of the packages to be compared (Id:name of the package, value: its options)
+#' @param sigma_values,mean_values,proportions,skewness_values the true parameters to be retrieved
+#' @param prop_outliers the proportion of outliers added in the simulation
+#' @param nobservations the number of observations drawn to generate the random sample
+#' @param epsilon,itmax respectively criterion threshold and maximal number of iterations to reach it
+#' @param nstart,short_iter,short_eps hyper-parameters to control the initialisation step
+#' @param prior_prob add minimal uncertainty on the cluster assignment returned by hierarchical clustering method
+#' @param initialisation_algorithms among 6 methods, which algorithms to be chosen for the initialisation phase
+#'
+#' @return a list with the simulated distributions of the estimates, some summary scores per parameter and aggregated measures
+#' as well as boxplot and Heatmap correlation representations of the estimates
+#'
+#' @export
+
 benchmark_distribution_parameters <- function(mixture_functions,
                                               sigma_values, mean_values, proportions, skewness_values,
-                                              prop_outliers = 0, nobservations = c(100, 1000, 10000), interval = 2,
+                                              prop_outliers = 0, nobservations = c(100, 1000, 10000),
                                               Nbootstrap = 100, epsilon = 10^-6, itmax = 1000,
                                               nstart = 10L, short_iter = 200, short_eps = 10^-2, prior_prob = 0.05,
                                               initialisation_algorithms = c("kmeans", "quantiles", "random", "hc", "rebmix")) {
@@ -43,7 +61,7 @@ benchmark_distribution_parameters <- function(mixture_functions,
               global_scores_temp <- tibble::tibble()
               distribution_parameters_temp <- tibble::tibble() # store temp summary scores
               for (t in 1:Nbootstrap) {
-                simulated_distribution <- rnmix_skewed_with_outliers(n = n, theta = true_theta, prop_outliers = prop_out, interval = interval) # simulation
+                simulated_distribution <- rnmix_skewed_with_outliers(n = n, theta = true_theta, prop_outliers = prop_out, interval = 2) # simulation
                 for (init_algo in initialisation_algorithms) {
                   ##################################################################
                   ##             estimation of the initial estimates             ##
@@ -203,7 +221,7 @@ benchmark_distribution_parameters <- function(mixture_functions,
 
   return(list(
     "distributions" = distribution_parameters,
-    "local_scores" = local_scores, "global_scores" = global_scores, "correlation_scores" = correlation_scores,
+    "local_scores" = local_scores, "global_scores" = global_scores,
     "plots" = parameters_plots, "correlation_scores_plots" = correlation_scores_plots
   ))
 }
@@ -220,20 +238,28 @@ benchmark_distribution_parameters <- function(mixture_functions,
 
 
 
-
-
-
-
-
-
-
-
+#' Launch the benchmark to compare computational performances between packages
+#'
+#' @author Bastien CHASSAGNOL
+#'
+#' @param mixture_functions List of the packages to be compared (Id:name of the package, value: its options)
+#' @param sigma_values,mean_values,proportions,skewness_values the true parameters to be retrieved
+#' @param prop_outliers the proportion of outliers added in the simulation
+#' @param nobservations the number of observations drawn to generate the random sample
+#' @param epsilon,itmax respectively criterion threshold and maximal number of iterations to reach it
+#' @param nstart,short_iter,short_eps hyper-parameters to control the initialisation step
+#' @param prior_prob add minimal uncertainty on the cluster assignment returned by hierarchical clustering method
+#' @param initialisation_algorithms among 6 methods, which algorithms to be chosen for the initialisation phase
+#'
+#' @return a list with the running time of the initialisation and the EM estimation itself, as well as corresponding time curve representations
+#'
+#' @export
 
 # function used to compare time computations between packages
 compute_microbenchmark <- function(mixture_functions,
                                    sigma_values, mean_values, proportions,
                                    skewness_values, prop_outliers = 0,
-                                   nobservations = c(100, 1000, 10000), interval = 2,
+                                   nobservations = c(100, 1000, 10000),
                                    Nbootstrap = 100, alpha = c(0.05), epsilon = 10^-6, itmax = 1000,
                                    nstart = 10L, short_iter = 200, short_eps = 10^-2, prior_prob = 0.05,
                                    initialisation_algorithms = c("kmeans", "quantiles", "random", "hc", "rebmix")) {
@@ -263,7 +289,7 @@ compute_microbenchmark <- function(mixture_functions,
                 n, "_observations_entropy", signif(entropy_value, digits = 2), "_skewness_", skew[1],
                 "_OVL_", signif(balanced_ovl, digits = 2), "_prop_outliers_", prop_out
               )
-              simulated_distribution <- rnmix_skewed_with_outliers(n = n, theta = true_theta, prop_outliers = prop_out, interval = interval) # simulation of the experience
+              simulated_distribution <- rnmix_skewed_with_outliers(n = n, theta = true_theta, prop_outliers = prop_out, interval = 2) # simulation of the experience
               mbm_temp <- tibble::tibble()
               init_temp <- tibble::tibble()
 
