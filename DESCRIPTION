@@ -1,0 +1,15 @@
+Package: RGMMBench
+Title: This repository contains the code used to generate automatically summary data and figures of the manuscript "Gaussian mixtures in R".
+Version: 0.0.0.9000
+Authors@R: 
+    person(given = "Bastien",
+           family = "CHASSAGNOL",
+           role = c("aut", "cre"),
+           email = "bastien_chassagnol@laposte.net",
+           comment = c(ORCID = "YOUR-ORCID-ID"))
+Description: This repository contains the code used to generate automatically summary data and figures of the manuscript "Gaussian mixtures in R". 
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.1
