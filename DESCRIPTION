@@ -1,5 +1,5 @@
 Package: RGMMBench
-Title: This repository contains the code used to generate automatically summary data and figures of the manuscript "Gaussian mixtures in R".
+Title: A benchmark on Gaussian mixtures in R
 Version: 0.0.0.9000
 Authors@R: 
     person(given = "Bastien",
@@ -13,3 +13,33 @@ Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.1
+Suggests: 
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0)
+VignetteBuilder: knitr
+Config/testthat/edition: 3
+Imports: 
+    ggplot2,
+    magrittr,
+    rebmix,
+    mclust,
+    Rmixmod,
+    otrimle,
+    mixsmsn,
+    mixtools,
+    bgmm,
+    EMCluster,
+    GMKMcharlie,
+    flexmix,
+    DCEM,
+    ComplexHeatmap,
+    MixSim,
+    dplyr,
+    egg,
+    microbenchmark,
+    purrr,
+    sn,
+    tibble,
+    tidyr,
+    methods

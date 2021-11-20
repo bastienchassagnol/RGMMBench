@@ -16,7 +16,7 @@ rnmix_skewed_with_outliers(
 
 \item{theta}{a list with 4 entries, corresponding to the true values of the parameters (proportion p, mean mu, deviation sigma, skewness skew)}
 
-\item{prop_outliers, }{interval the proportion of outliers in the mixture, and its range respective to the 0.05 and 0.95 quantiles of the global distribution}
+\item{prop_outliers, interval}{the proportion of outliers in the mixture, and its range respective to the 0.05 and 0.95 quantiles of the global distribution}
 }
 \value{
 a list with the number of components k, the true parameters p, mu, sigma, skew, the observed variables x, the hidden observations s and an indicator of the outliers s_outliers

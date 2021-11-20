@@ -13,7 +13,6 @@ compute_microbenchmark(
   prop_outliers = 0,
   nobservations = c(100, 1000, 10000),
   Nbootstrap = 100,
-  alpha = c(0.05),
   epsilon = 10^-6,
   itmax = 1000,
   nstart = 10L,
@@ -31,6 +30,8 @@ compute_microbenchmark(
 \item{prop_outliers}{the proportion of outliers added in the simulation}
 
 \item{nobservations}{the number of observations drawn to generate the random sample}
+
+\item{Nbootstrap}{the number of bootstrap simulations and repetitions to perform}
 
 \item{epsilon, itmax}{respectively criterion threshold and maximal number of iterations to reach it}
 

@@ -7,7 +7,7 @@
 plot_time_computations(time_data)
 }
 \arguments{
-\item{init_time_data}{the running time data associated to the EM estimation performed by the reviewed packages}
+\item{time_data}{the running time data associated to the EM estimation performed by the reviewed packages}
 }
 \value{
 time_plots a ggplot object representing the running time curve distributions of the reviewed packages

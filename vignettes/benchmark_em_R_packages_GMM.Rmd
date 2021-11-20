@@ -1,0 +1,19 @@
+---
+title: "benchmark_em_R_packages_GMM"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{benchmark_em_R_packages_GMM}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(RGMMBench)
+```

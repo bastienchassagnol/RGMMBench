@@ -109,7 +109,7 @@ plot_initialisation_time_computations <- function(init_time_data) {
 #'
 #' @author Bastien CHASSAGNOL
 #'
-#' @param init_time_data the running time data associated to the EM estimation performed by the reviewed packages
+#' @param time_data the running time data associated to the EM estimation performed by the reviewed packages
 #'
 #' @return time_plots a ggplot object representing the running time curve distributions of the reviewed packages
 #'

@@ -8,6 +8,7 @@
 \alias{em_flexmix}
 \alias{em_mixtools}
 \alias{em_DCEM}
+\alias{em_GMKMcharlie}
 \alias{em_otrimle}
 \alias{em_mixsmsn}
 \title{Custom R implementation of the EM algorithm}
@@ -83,6 +84,17 @@ em_DCEM(
   ...
 )
 
+em_GMKMcharlie(
+  x = x,
+  k = 2,
+  initialisation_algorithm = "hc",
+  itmax = 5000,
+  epsilon = 10^-12,
+  start = NULL,
+  parallel = FALSE,
+  ...
+)
+
 em_otrimle(
   x = x,
   k = 2,
@@ -110,9 +122,15 @@ em_mixsmsn(
 
 \item{itmax}{the maximal number of iterations to reach the threshold}
 
+\item{epsilon}{the criterion threshold considered as the tolerance between two consecutive log-likelihoods}
+
 \item{start}{list of initial estimates provided by the user}
 
 \item{initialisation_algorithm, nstart}{hyperparameters, when the user rather uses one of our implemented initialisation algorithms}
+
+\item{...}{additional parameters for the reviewed packages}
+
+\item{skew}{the initial guess of the user on the skewness of the distribution (only relevent for em_mixsmn function)}
 }
 \value{
 a list of the estimated parameters, ordered by increasing mean for identifiability issues
@@ -133,6 +151,8 @@ Custom R implementation of the EM algorithm
 \item \code{em_mixtools}: EM implementation with mixtools package
 
 \item \code{em_DCEM}: EM implementation with DCEM package
+
+\item \code{em_GMKMcharlie}: EM implementation with GMKMcharlie package
 
 \item \code{em_otrimle}: EM implementation with otrimle package (designed to deal with outliers especially)
 

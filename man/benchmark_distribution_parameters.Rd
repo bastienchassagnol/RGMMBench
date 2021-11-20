@@ -31,6 +31,8 @@ benchmark_distribution_parameters(
 
 \item{nobservations}{the number of observations drawn to generate the random sample}
 
+\item{Nbootstrap}{the number of bootstrap simulations and repetitions to perform}
+
 \item{epsilon, itmax}{respectively criterion threshold and maximal number of iterations to reach it}
 
 \item{nstart, short_iter, short_eps}{hyper-parameters to control the initialisation step}

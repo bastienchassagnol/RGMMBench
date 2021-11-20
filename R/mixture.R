@@ -4,7 +4,7 @@
 #'
 #' @param n the number of observations to be drawn
 #' @param theta a list with 4 entries, corresponding to the true values of the parameters (proportion p, mean mu, deviation sigma, skewness skew)
-#' @param prop_outliers, interval the proportion of outliers in the mixture, and its range respective to the 0.05 and 0.95 quantiles of the global distribution
+#' @param prop_outliers,interval the proportion of outliers in the mixture, and its range respective to the 0.05 and 0.95 quantiles of the global distribution
 #'
 #' @return a list with the number of components k, the true parameters p, mu, sigma, skew, the observed variables x, the hidden observations s and an indicator of the outliers s_outliers
 #'
@@ -55,9 +55,11 @@ rnmix_skewed_with_outliers <- function(n,
 #'
 #' @param x the vector of the observations
 #' @param k the number of components
-#' @param n_start the number of random restarts with kmeans, random and small EM method
+#' @param nstart the number of random restarts with kmeans, random and small EM method
+#' @param prior_prob minimal uncertainity added to the minor components of each observation assigned by hierarchical clustering
 #' @param short_iter,short_eps hyperparameters of the small EM method
 #' @param initialisation_algorithm the choice of the initialisation method, between kmeans, quantiles, random, hc, small em and rebmix method
+#' @param ... additional hyperparameters supplied with some of the initialisation methods
 #'
 #' @return a list of the estimated parameters, ordered by increasing mean for identifiability issues
 #'
@@ -143,7 +145,7 @@ initialize_em <- function(x = NULL, k = 2, nstart = 10L, short_iter = 200, short
     estimated_theta <- purrr::map(all_logs, "parameters")[[best_model]]
   }
   else if (initialisation_algorithm == "rebmix") {
-    EM_control <- new("EM.Control",
+    EM_control <- methods::new("EM.Control",
       strategy = "exhaustive", variant = "EM", acceleration = "fixed",
       acceleration.multiplier = 1, tolerance = short_eps, maximum.iterations = 1
     )
@@ -180,10 +182,15 @@ initialize_em <- function(x = NULL, k = 2, nstart = 10L, short_iter = 200, short
 #' @param x the vector of the observations
 #' @param k the number of components
 #' @param itmax the maximal number of iterations to reach the threshold
+#' @param epsilon the criterion threshold considered as the tolerance between two consecutive log-likelihoods
 #' @param start list of initial estimates provided by the user
 #' @param initialisation_algorithm,nstart hyperparameters, when the user rather uses one of our implemented initialisation algorithms
+#' @param skew the initial guess of the user on the skewness of the distribution (only relevent for em_mixsmn function)
+#' @param ... additional parameters for the reviewed packages
 #'
 #' @return a list of the estimated parameters, ordered by increasing mean for identifiability issues
+#'
+#' @importFrom stats IQR dnorm median quantile runif sd var
 #'
 #' @export
 
@@ -253,6 +260,8 @@ emnmix <- function(x, k, itmax = 5000, epsilon = 10^-12, nstart = 10L, start = N
 
 
 #' @describeIn emnmix EM implementation with Rmixmod package
+#' @importClassesFrom Rmixmod Strategy GaussianParameter
+#' @export
 em_Rmixmod <- function(x = x, k = 2, initialisation_algorithm = "kmeans",
                        itmax = 5000, epsilon = 10^-12, start = NULL, ...) {
 
@@ -265,11 +274,11 @@ em_Rmixmod <- function(x = x, k = 2, initialisation_algorithm = "kmeans",
   }
 
   # define strategy
-  strategy_Rmixmod <- new("Strategy",
+  strategy_Rmixmod <- methods::new("Strategy",
     algo = "EM", nbTryInInit = 10L,
     initMethod = "parameter", nbIterationInAlgo = itmax,
     epsilonInAlgo = epsilon,
-    parameter = new("GaussianParameter",
+    parameter = methods::new("GaussianParameter",
       proportions = start$p,
       mean = as.matrix(start$mu),
       variance = lapply(start$sigma, function(x) as.matrix(x^2))
@@ -300,7 +309,7 @@ em_Rmixmod <- function(x = x, k = 2, initialisation_algorithm = "kmeans",
 
 
 #' @describeIn emnmix EM implementation with EMCluster package
-
+#' @export
 em_EMCluster <- function(x = x, k = 2, initialisation_algorithm = "kmeans",
                          itmax = 5000, epsilon = 10^-12, start = NULL, ...) {
 
@@ -340,7 +349,7 @@ em_EMCluster <- function(x = x, k = 2, initialisation_algorithm = "kmeans",
 
 
 #' @describeIn emnmix EM implementation with bgmm package
-
+#' @export
 em_bgmm <- function(x = x, k = 2, itmax = 5000, epsilon = 10^-12,
                     initialisation_algorithm = "kmeans", start = NULL, ...) {
 
@@ -382,7 +391,7 @@ em_bgmm <- function(x = x, k = 2, itmax = 5000, epsilon = 10^-12,
 
 
 #' @describeIn emnmix EM implementation with flexmix package
-
+#' @export
 em_flexmix <- function(x = x, k = 2, itmax = 5000, epsilon = 10^-12,
                        initialisation_algorithm = "kmeans", start = NULL, ...) {
 
@@ -421,7 +430,7 @@ em_flexmix <- function(x = x, k = 2, itmax = 5000, epsilon = 10^-12,
 
 
 #' @describeIn emnmix EM implementation with mixtools package
-
+#' @export
 em_mixtools <- function(x = x, k = 2, initialisation_algorithm = "hc",
                         itmax = 5000, epsilon = 10^-12, start = NULL, ...) {
   # initialization section
@@ -478,7 +487,7 @@ em_mclust <- function(x = x, k = 2, initialisation_algorithm = "hc", start = NUL
 
 
 #' @describeIn emnmix EM implementation with DCEM package
-
+#' @export
 em_DCEM <- function(x = x, k = 2, initialisation_algorithm = "hc",
                     itmax = 5000, epsilon = 10^-12, start = NULL, ...) {
   # initialization section
@@ -505,6 +514,8 @@ em_DCEM <- function(x = x, k = 2, initialisation_algorithm = "hc",
 }
 
 # em algorithm for mixture models using GMKMcharlie package
+#' @describeIn emnmix EM implementation with GMKMcharlie package
+#' @export
 em_GMKMcharlie <- function(x = x, k = 2, initialisation_algorithm = "hc",
                            itmax = 5000, epsilon = 10^-12, start = NULL, parallel = FALSE, ...) {
   # initialization section
@@ -533,8 +544,7 @@ em_GMKMcharlie <- function(x = x, k = 2, initialisation_algorithm = "hc",
 
 
 #' @describeIn emnmix EM implementation with otrimle package (designed to deal with outliers especially)
-
-# em algorithm for mixture models using otrimle package
+#' @export
 em_otrimle <- function(x = x, k = 2, initialisation_algorithm = "hc",
                        itmax = 5000, epsilon = 10^-12, ...) {
   if (initialisation_algorithm == "hc") {
@@ -562,7 +572,7 @@ em_otrimle <- function(x = x, k = 2, initialisation_algorithm = "hc",
 
 
 #' @describeIn emnmix EM implementation with mixsmsn package (designed to deal with skewed GMMs especially)
-
+#' @export
 em_mixsmsn <- function(x = x, k = 2, initialisation_algorithm = "hc", skew = rep(0, k),
                        itmax = 5000, epsilon = 10^-12, start = NULL, ...) {
   if (is.null(start)) {

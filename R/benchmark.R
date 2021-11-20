@@ -6,6 +6,7 @@
 #' @param sigma_values,mean_values,proportions,skewness_values the true parameters to be retrieved
 #' @param prop_outliers the proportion of outliers added in the simulation
 #' @param nobservations the number of observations drawn to generate the random sample
+#' @param Nbootstrap the number of bootstrap simulations and repetitions to perform
 #' @param epsilon,itmax respectively criterion threshold and maximal number of iterations to reach it
 #' @param nstart,short_iter,short_eps hyper-parameters to control the initialisation step
 #' @param prior_prob add minimal uncertainty on the cluster assignment returned by hierarchical clustering method
@@ -13,6 +14,9 @@
 #'
 #' @return a list with the simulated distributions of the estimates, some summary scores per parameter and aggregated measures
 #' as well as boxplot and Heatmap correlation representations of the estimates
+#'
+#' @importFrom magrittr "%>%"
+#' @import ggplot2
 #'
 #' @export
 
@@ -141,7 +145,7 @@ benchmark_distribution_parameters <- function(mixture_functions,
               local_scores_temp <- distribution_parameters_temp %>%
                 dplyr::group_by(initialisation_method, package) %>%
                 dplyr::summarize(get_local_scores(dplyr::cur_data() %>%
-                  dplyr::select(dplyr::all_of(bootstrap_colnames)), true_theta[c("p", "mu", "sigma")], alpha = alpha)) %>%
+                  dplyr::select(dplyr::all_of(bootstrap_colnames)), true_theta[c("p", "mu", "sigma")])) %>%
                 tibble::add_column(
                   OVL = signif(balanced_ovl, digits = 2), entropy = signif(entropy_value, digits = 2),
                   OVL_pairwise = signif(pairwise_ovl, digits = 2), skew = skew[1], nobservations = n, prop_outliers = prop_out
@@ -246,6 +250,7 @@ benchmark_distribution_parameters <- function(mixture_functions,
 #' @param sigma_values,mean_values,proportions,skewness_values the true parameters to be retrieved
 #' @param prop_outliers the proportion of outliers added in the simulation
 #' @param nobservations the number of observations drawn to generate the random sample
+#' @param Nbootstrap the number of bootstrap simulations and repetitions to perform
 #' @param epsilon,itmax respectively criterion threshold and maximal number of iterations to reach it
 #' @param nstart,short_iter,short_eps hyper-parameters to control the initialisation step
 #' @param prior_prob add minimal uncertainty on the cluster assignment returned by hierarchical clustering method
@@ -260,7 +265,7 @@ compute_microbenchmark <- function(mixture_functions,
                                    sigma_values, mean_values, proportions,
                                    skewness_values, prop_outliers = 0,
                                    nobservations = c(100, 1000, 10000),
-                                   Nbootstrap = 100, alpha = c(0.05), epsilon = 10^-6, itmax = 1000,
+                                   Nbootstrap = 100, epsilon = 10^-6, itmax = 1000,
                                    nstart = 10L, short_iter = 200, short_eps = 10^-2, prior_prob = 0.05,
                                    initialisation_algorithms = c("kmeans", "quantiles", "random", "hc", "rebmix")) {
 
