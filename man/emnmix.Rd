@@ -130,6 +130,8 @@ em_mixsmsn(
 
 \item{...}{additional parameters for the reviewed packages}
 
+\item{parallel}{only relevant for GMKMCharlie package which has a native parallell implementation (by default, takes half of the avalaible clusters)}
+
 \item{skew}{the initial guess of the user on the skewness of the distribution (only relevent for em_mixsmn function)}
 }
 \value{

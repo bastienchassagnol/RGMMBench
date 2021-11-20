@@ -186,6 +186,7 @@ initialize_em <- function(x = NULL, k = 2, nstart = 10L, short_iter = 200, short
 #' @param start list of initial estimates provided by the user
 #' @param initialisation_algorithm,nstart hyperparameters, when the user rather uses one of our implemented initialisation algorithms
 #' @param skew the initial guess of the user on the skewness of the distribution (only relevent for em_mixsmn function)
+#' @param parallel only relevant for GMKMCharlie package which has a native parallell implementation (by default, takes half of the avalaible clusters)
 #' @param ... additional parameters for the reviewed packages
 #'
 #' @return a list of the estimated parameters, ordered by increasing mean for identifiability issues
