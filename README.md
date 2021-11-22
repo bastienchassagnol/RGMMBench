@@ -66,8 +66,8 @@ ggsave("images/four_components_unbalanced_overlapping_boxplots.pdf", unbalanced_
 To get the most recent version, open `R` and run:
 
 ```R
-if(!require(devtools)) install.packages("devtools")
-devtools::install_github("bastienchassagnol/RGMMBench")
+if(!require(remotes)) install.packages("remotes")
+remotes::install_github("bastienchassagnol/RGMMBench")
 ```
 
 The package is composed of four scripts: **main** contains the main script to load required libraries and executes auxiliary functions to reproduce figures and tables of the paper

@@ -2,44 +2,48 @@ Package: RGMMBench
 Title: A benchmark on Gaussian mixtures in R
 Version: 0.0.0.9000
 Authors@R: 
-    person(given = "Bastien",
-           family = "CHASSAGNOL",
-           role = c("aut", "cre"),
-           email = "bastien_chassagnol@laposte.net",
+    person("Bastien", "CHASSAGNOL", , "bastien_chassagnol@laposte.net", role = c("aut", "cre"),
            comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: This repository contains the code used to generate automatically summary data and figures of the manuscript "Gaussian mixtures in R". 
+Description: This repository contains the code used to generate
+    automatically summary data and figures of the manuscript "Gaussian
+    mixtures in R".
 License: MIT + file LICENSE
-Encoding: UTF-8
-LazyData: true
-Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.1.1
+Imports: 
+    bgmm,
+    DCEM,
+    dplyr,
+    egg,
+    EMCluster,
+    flexmix,
+    ggplot2,
+    GMKMcharlie,
+    grid,
+    magrittr,
+    mclust,
+    methods,
+    microbenchmark,
+    MixSim,
+    mixsmsn,
+    mixtools,
+    otrimle,
+    parallel,
+    purrr,
+    rebmix,
+    Rmixmod,
+    sn,
+    stats,
+    tibble,
+    tidyr
 Suggests: 
     knitr,
     rmarkdown,
     testthat (>= 3.0.0)
-VignetteBuilder: knitr
+VignetteBuilder: 
+    knitr
 Config/testthat/edition: 3
-Imports: 
-    ggplot2,
-    magrittr,
-    rebmix,
-    mclust,
-    Rmixmod,
-    otrimle,
-    mixsmsn,
-    mixtools,
-    bgmm,
-    EMCluster,
-    GMKMcharlie,
-    flexmix,
-    DCEM,
-    ComplexHeatmap,
-    MixSim,
-    dplyr,
-    egg,
-    microbenchmark,
-    purrr,
-    sn,
-    tibble,
-    tidyr,
-    methods
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.2
+Remotes:  
+    bioc::release/ComplexHeatmap
