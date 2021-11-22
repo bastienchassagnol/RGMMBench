@@ -43,8 +43,6 @@ four_components_statistical_performances <- benchmark_distribution_parameters(mi
                                                                              proportions = list("highly unbalanced"=c(0.1, 0.7, 0.1, 0.1)),
                                                                              skewness_values = list("null skewness"=rep(0, 4),
                                                                              Nbootstrap=200,  nobservations=c(2000)))
-```
-
 #################################################################
 ##  Save results (example with the four components simulation  ##
 #################################################################
@@ -58,7 +56,7 @@ openxlsx::write.xlsx(four_components_statistical_performances$distributions,file
 unbalanced_overlapping_boxplots <- four_components_computational_performances$plots$`2000_observations_UR_0.9_skewness_0_OVL_0.08_prop_outliers_0`
 ggsave("images/four_components_unbalanced_overlapping_boxplots.pdf", unbalanced_overlapping_boxplots,
        width = 15, height = 14,dpi = 600)
-
+```
 </details>
 
 
