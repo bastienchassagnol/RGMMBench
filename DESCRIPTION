@@ -3,13 +3,14 @@ Title: A benchmark on Gaussian mixtures in R
 Version: 0.0.0.9000
 Authors@R: 
     person("Bastien", "CHASSAGNOL", , "bastien_chassagnol@laposte.net", role = c("aut", "cre"),
-           comment = c(ORCID = "YOUR-ORCID-ID"))
+           comment = c(ORCID = "0000-0002-8955-2391"))
 Description: This repository contains the code used to generate
     automatically summary data and figures of the manuscript "Gaussian
     mixtures in R".
 License: MIT + file LICENSE
 Imports: 
     bgmm,
+    ComplexHeatmap,
     DCEM,
     dplyr,
     egg,
@@ -45,5 +46,5 @@ Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.2
-Remotes:  
+Remotes: 
     bioc::release/ComplexHeatmap
