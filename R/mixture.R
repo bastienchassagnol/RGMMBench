@@ -457,7 +457,8 @@ em_mixtools <- function(x = x, k = 2, initialisation_algorithm = "hc",
   return(ordered_estimated_theta)
 }
 
-# em algorithm for mixture models using mclust package
+#' @describeIn emnmix EM implementation with mclust package
+#' @export
 em_mclust <- function(x = x, k = 2, initialisation_algorithm = "hc", start = NULL,
                       itmax = 5000, epsilon = 10^-12, prior = NULL, ...) {
 

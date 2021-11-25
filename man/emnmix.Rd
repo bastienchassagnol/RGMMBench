@@ -7,6 +7,7 @@
 \alias{em_bgmm}
 \alias{em_flexmix}
 \alias{em_mixtools}
+\alias{em_mclust}
 \alias{em_DCEM}
 \alias{em_GMKMcharlie}
 \alias{em_otrimle}
@@ -71,6 +72,17 @@ em_mixtools(
   itmax = 5000,
   epsilon = 10^-12,
   start = NULL,
+  ...
+)
+
+em_mclust(
+  x = x,
+  k = 2,
+  initialisation_algorithm = "hc",
+  start = NULL,
+  itmax = 5000,
+  epsilon = 10^-12,
+  prior = NULL,
   ...
 )
 
@@ -151,6 +163,8 @@ Custom R implementation of the EM algorithm
 \item \code{em_flexmix}: EM implementation with flexmix package
 
 \item \code{em_mixtools}: EM implementation with mixtools package
+
+\item \code{em_mclust}: EM implementation with mclust package
 
 \item \code{em_DCEM}: EM implementation with DCEM package
 
