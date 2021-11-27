@@ -138,13 +138,15 @@ em_mixsmsn(
 
 \item{start}{list of initial estimates provided by the user}
 
-\item{initialisation_algorithm, nstart}{hyperparameters, when the user rather uses one of our implemented initialisation algorithms}
+\item{initialisation_algorithm, nstart}{hyper-parameters, when the user rather uses one of our implemented initialization algorithms}
 
 \item{...}{additional parameters for the reviewed packages}
 
-\item{parallel}{only relevant for GMKMCharlie package which has a native parallell implementation (by default, takes half of the avalaible clusters)}
+\item{prior}{the mclust object used to store the supposed prior distributions of the parameters' components (only relevant if a Bayesian implementation is required)}
 
-\item{skew}{the initial guess of the user on the skewness of the distribution (only relevent for em_mixsmn function)}
+\item{parallel}{only relevant for GMKMCharlie package which has a native parallel implementation (by default, takes half of the available clusters)}
+
+\item{skew}{the initial guess of the user on the skewness of the distribution (only relevant for em_mixsmn function)}
 }
 \value{
 a list of the estimated parameters, ordered by increasing mean for identifiability issues

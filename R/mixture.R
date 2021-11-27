@@ -85,17 +85,14 @@ initialize_em <- function(x = NULL, k = 2, nstart = 10L, short_iter = 200, short
       mu = as.vector(fit$centers),
       sigma = sqrt(fit$withinss / fit$size)
     )
-  }
-
-  else if (initialisation_algorithm == "quantiles") {
+  } else if (initialisation_algorithm == "quantiles") {
     fit <- bgmm::init.model.params(X = x, k = k, method = "all")
     estimated_theta <- list(
       p = fit$pi,
       mu = as.vector(fit$mu),
       sigma = sqrt(as.vector(fit$cvar))
     )
-  }
-  else if (initialisation_algorithm == "random") {
+  } else if (initialisation_algorithm == "random") {
     all_logs <- lapply(1:nstart, function(y) {
       fit <- EMCluster::simple.init(as.matrix(x), nclass = k)
       logLikelihood_per_random <- EMCluster::logL(as.matrix(x), fit)
@@ -109,8 +106,7 @@ initialize_em <- function(x = NULL, k = 2, nstart = 10L, short_iter = 200, short
       mu = as.vector(fit$Mu),
       sigma = sqrt(as.vector(fit$LTSigma))
     )
-  }
-  else if (initialisation_algorithm == "hc") {
+  } else if (initialisation_algorithm == "hc") {
     clustering_hc <- mclust::hcV(data = x, minclus = 1, ...)
     partition_hc <- as.vector(mclust::hclass(clustering_hc, G = k))
     # generate posterior probability, adding artificially min probability to be assigned to each cluster
@@ -123,8 +119,7 @@ initialize_em <- function(x = NULL, k = 2, nstart = 10L, short_iter = 200, short
       control = mclust::emControl(itmax = 1, equalPro = FALSE)
     )
     estimated_theta <- list(p = fit$parameters$pro, mu = fit$parameters$mean, sigma = sqrt(fit$parameters$variance$sigmasq))
-  }
-  else if (initialisation_algorithm == "small em") {
+  } else if (initialisation_algorithm == "small em") {
     all_logs <- lapply(1:nstart, function(y) {
       # take some random points using EMCluster simple method
       start <- EMCluster::simple.init(as.matrix(x), nclass = k)
@@ -143,8 +138,7 @@ initialize_em <- function(x = NULL, k = 2, nstart = 10L, short_iter = 200, short
 
     best_model <- which.max(all_logs %>% purrr::map_dbl("logLikelihood"))
     estimated_theta <- purrr::map(all_logs, "parameters")[[best_model]]
-  }
-  else if (initialisation_algorithm == "rebmix") {
+  } else if (initialisation_algorithm == "rebmix") {
     EM_control <- methods::new("EM.Control",
       strategy = "exhaustive", variant = "EM", acceleration = "fixed",
       acceleration.multiplier = 1, tolerance = short_eps, maximum.iterations = 1
@@ -184,9 +178,10 @@ initialize_em <- function(x = NULL, k = 2, nstart = 10L, short_iter = 200, short
 #' @param itmax the maximal number of iterations to reach the threshold
 #' @param epsilon the criterion threshold considered as the tolerance between two consecutive log-likelihoods
 #' @param start list of initial estimates provided by the user
-#' @param initialisation_algorithm,nstart hyperparameters, when the user rather uses one of our implemented initialisation algorithms
-#' @param skew the initial guess of the user on the skewness of the distribution (only relevent for em_mixsmn function)
-#' @param parallel only relevant for GMKMCharlie package which has a native parallell implementation (by default, takes half of the avalaible clusters)
+#' @param initialisation_algorithm,nstart hyper-parameters, when the user rather uses one of our implemented initialization algorithms
+#' @param skew the initial guess of the user on the skewness of the distribution (only relevant for em_mixsmn function)
+#' @param parallel only relevant for GMKMCharlie package which has a native parallel implementation (by default, takes half of the available clusters)
+#' @param prior the mclust object used to store the supposed prior distributions of the parameters' components (only relevant if a Bayesian implementation is required)
 #' @param ... additional parameters for the reviewed packages
 #'
 #' @return a list of the estimated parameters, ordered by increasing mean for identifiability issues
@@ -551,8 +546,7 @@ em_otrimle <- function(x = x, k = 2, initialisation_algorithm = "hc",
                        itmax = 5000, epsilon = 10^-12, ...) {
   if (initialisation_algorithm == "hc") {
     start <- otrimle::InitClust(as.matrix(x), G = 2, modelName = "V")
-  }
-  else {
+  } else {
     stop("This initialisation method is not enabled with otrimle package.")
   }
   avalaible_processors <- parallel::detectCores() %/% 2
@@ -593,8 +587,7 @@ em_mixsmsn <- function(x = x, k = 2, initialisation_algorithm = "hc", skew = rep
       g = 2, get.init = FALSE, criteria = FALSE, group = FALSE, family = "Normal",
       error = 10^-12, iter.max = 5000, calc.im = FALSE
     )
-  }
-  else {
+  } else {
     # fit a skewed distribution
     fit <- mixsmsn::smsn.mix(
       y = x, nu = 3,
@@ -716,16 +709,14 @@ check_parameters_validity <- function(estimated_theta, k = 2) {
       "mu: ", paste(estimated_theta$mu, collapse = " / "), " and sigma: ", paste(estimated_theta$sigma, collapse = " / ")
     ))
     return(FALSE)
-  }
-  else if (any(estimated_theta$p < machine_limit | estimated_theta$p > 1 - machine_limit) |
+  } else if (any(estimated_theta$p < machine_limit | estimated_theta$p > 1 - machine_limit) |
     any(estimated_theta$sigma < machine_limit) | any(estimated_theta$sigma > machine_max) | any(sapply(estimated_theta, length) != k)) {
     warning(paste0(
       "Out of computational data with estimated theta, with ratios: ", paste(estimated_theta$p, collapse = " / "), ", ",
       "mu: ", paste(estimated_theta$mu, collapse = " / "), " and sigma: ", paste(estimated_theta$sigma, collapse = " / ")
     ))
     return(FALSE)
-  }
-  else {
+  } else {
     return(TRUE)
   }
 }
@@ -779,17 +770,19 @@ get_local_scores <- function(estimated_theta, true_theta, alpha = 0.2) {
 
 compute_overlap_roots <- function(p1, p2, mu1, mu2, sigma1, sigma2) {
   # homoscedastic case, only one intersection point
-  if (sigma1==sigma2) {
-    return ((sigma1^2 * log(p2/p1))/(mu1-mu2) + (mu1 + mu2)/2)
+  if (sigma1 == sigma2) {
+    return((sigma1^2 * log(p2 / p1)) / (mu1 - mu2) + (mu1 + mu2) / 2)
   }
   # heteroscedastic case, existence of two intersections points
   # conditioned on the proportions
-  else if ((sigma2 > sigma1 & p1 > (sigma1/(sigma1 + sigma2))) |
-           (sigma2 < sigma1 & p1 < (sigma1/(sigma1 + sigma2)))){
-    variant_part <- sigma1 * sigma2 * sqrt((mu1 - mu2)^2 + 2 * (sigma2^2 - sigma1^2) * (log(p1/p2) +log(sigma2/sigma1)))
-    return(c((sigma1^2*mu2 - sigma2^2*mu1 - variant_part)/(sigma1^2 - sigma2^2),
-             (sigma1^2*mu2 - sigma2^2*mu1 + variant_part)/(sigma1^2 - sigma2^2)))
-  }
-  else
+  else if ((sigma2 > sigma1 & p1 > (sigma1 / (sigma1 + sigma2))) |
+    (sigma2 < sigma1 & p1 < (sigma1 / (sigma1 + sigma2)))) {
+    variant_part <- sigma1 * sigma2 * sqrt((mu1 - mu2)^2 + 2 * (sigma2^2 - sigma1^2) * (log(p1 / p2) + log(sigma2 / sigma1)))
+    return(c(
+      (sigma1^2 * mu2 - sigma2^2 * mu1 - variant_part) / (sigma1^2 - sigma2^2),
+      (sigma1^2 * mu2 - sigma2^2 * mu1 + variant_part) / (sigma1^2 - sigma2^2)
+    ))
+  } else {
     stop("There's no intersection point in that configuration")
+  }
 }
