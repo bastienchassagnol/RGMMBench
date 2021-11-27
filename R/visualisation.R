@@ -152,3 +152,82 @@ plot_time_computations <- function(time_data) {
 
   return(time_plots)
 }
+
+
+#' Plot the true density distributions
+#'
+#' @author Bastien CHASSAGNOL
+#'
+#' @param proportions,mean_values,sigma_values,skewness_values parameters of the several components represented,
+#' represented by a list of vector parameters
+#'
+#' @return density_plots a ggplot object representing the distributions of the density functions
+#'
+#' @export
+
+plot_density_distribution <- function(proportions, mean_values,
+                                      sigma_values, skewness_values) {
+
+  density_plots <- list(); iteration <- 1
+  #################################################################
+  ##               generation of the distributions               ##
+  #################################################################
+  for (skew in skewness_values) {
+    for(p in proportions) {
+      for (mu in mean_values) {
+        for (sigma in sigma_values) {
+          true_theta <- list(p=p, mu=mu, sigma=sigma, skew=skew) # true parameters of the distribution
+          k <- length(p) # number of components
+          if (any(sapply(true_theta, length)!=k)) {
+            stop("One of the original componenent is not completely provided")
+          }
+
+          # compute 0.001 and 0.999 quantiles of min and max components
+          min_value <- sapply (1:k, function(i)
+            sn::qsn(0.001, xi=true_theta$mu[i], omega= true_theta$sigma[i], alpha=true_theta$skew[i],tau=0)) %>% min()
+          max_value <- sapply (1:k, function(i)
+            sn::qsn(0.999, xi=true_theta$mu[i], omega= true_theta$sigma[i], alpha=true_theta$skew[i],tau=0)) %>% max()
+
+          distribution_data <- tibble::tibble(x=seq(min_value, max_value, length.out = 10000))
+          # add a column for each component
+          for (i in 1:k) {
+            distribution_data <- distribution_data %>% tibble::add_column("component {i}" := true_theta$p[i] *
+                                                            sn::dsn(distribution_data$x, xi=true_theta$mu[i], omega = true_theta$sigma[i], alpha = true_theta$skew[i], tau=0))
+          }
+
+          distribution_data <- distribution_data %>% dplyr::mutate(total=rowSums(dplyr::across(dplyr::starts_with("component ")))) %>%
+            tidyr::pivot_longer(cols =dplyr::starts_with(c("component ", "total")), names_to = "components", values_to = "expression") %>%
+            dplyr::mutate(skew=skew[1], components=as.factor(gsub("total", "mixture\ndistribution",gsub("component ", "", components))))
+
+
+          ##################################################################
+          ##               plot the simulated distributions               ##
+          ##################################################################
+          plot_title <- ""
+          for (i in 1:k) {
+            plot_title <- paste0(plot_title, "Component ", i, " has parameters ",
+                               "p",i,": ", signif(true_theta$p[i], digits = 2),", ",
+                               "mu",i,": ",true_theta$mu[i],", ",
+                               "sigma",i,": ",true_theta$sigma[i],", ",
+                               "skew", i, ": ",true_theta$skew[i], ".\n")
+          }
+
+          density_plots[[paste("Plot ", iteration)]] <- ggplot(distribution_data, aes(x = x, color = components, y=expression,
+                                                                linetype=components, alpha=components, size = components)) +
+            geom_line(key_glyph = draw_key_path) +
+            theme_bw() +
+            theme(plot.title = element_blank(), legend.position = "bottom", axis.title=element_blank(),  plot.subtitle = element_text(hjust = 0.5),
+                  legend.title = element_blank(), legend.text = element_text(size = 25), legend.key.width = unit(1.5, 'cm')) +
+            labs(subtitle = plot_title) +
+            scale_linetype_manual(values = c(2:(k+1), 1)) +
+            scale_alpha_manual(values = c(rep(1, k), 0.25)) +
+            scale_size_manual(values = c(rep(1, k), 2))
+          iteration <- iteration + 1
+        }
+      }
+    }
+  }
+  return(density_plots)
+}
+
+

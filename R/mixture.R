@@ -767,3 +767,29 @@ get_local_scores <- function(estimated_theta, true_theta, alpha = 0.2) {
     dplyr::bind_rows(mean_parameter, empiric_sds, bias, mse)
   ))
 }
+
+
+#' Compute the intersection points between two Gaussian mixtures (where one component goes above the other)
+#'
+#' @author Bastien CHASSAGNOL
+#'
+#' @param p1,p2,mu1,mu2,sigma1,sigma2 parameters of the two Gaussian components
+#' @return the overlap roots
+#' @export
+
+compute_overlap_roots <- function(p1, p2, mu1, mu2, sigma1, sigma2) {
+  # homoscedastic case, only one intersection point
+  if (sigma1==sigma2) {
+    return ((sigma1^2 * log(p2/p1))/(mu1-mu2) + (mu1 + mu2)/2)
+  }
+  # heteroscedastic case, existence of two intersections points
+  # conditioned on the proportions
+  else if ((sigma2 > sigma1 & p1 > (sigma1/(sigma1 + sigma2))) |
+           (sigma2 < sigma1 & p1 < (sigma1/(sigma1 + sigma2)))){
+    variant_part <- sigma1 * sigma2 * sqrt((mu1 - mu2)^2 + 2 * (sigma2^2 - sigma1^2) * (log(p1/p2) +log(sigma2/sigma1)))
+    return(c((sigma1^2*mu2 - sigma2^2*mu1 - variant_part)/(sigma1^2 - sigma2^2),
+             (sigma1^2*mu2 - sigma2^2*mu1 + variant_part)/(sigma1^2 - sigma2^2)))
+  }
+  else
+    stop("There's no intersection point in that configuration")
+}

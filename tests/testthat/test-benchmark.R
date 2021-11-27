@@ -26,3 +26,7 @@ running_times <- compute_microbenchmark(mixture_functions=relevant_mixture_funct
                                         mean_values=list(c(0, 4)), proportions = list("balanced"=c(0.5, 0.5), "little unbalanced"=c(0.65, 0.35)),
                                         skewness_values = list("null skewness"=c(0, 0)),prop_outliers = c(0),
                                         Nbootstrap=5, nobservations=c(50, 100, 200), initialisation_algorithms = c("quantiles"))
+
+density_plots <- plot_density_distribution(sigma_values=list("null OVL"=c(0.3, 0.3), "small OVL"=c(1, 1), "high OVL"= c(2, 2)),
+                                           mean_values=list(c(0, 4)), skewness_values = list("null skewness"=c(0, 0), "high skewness"=c(20, 20)),
+                                           proportions=list("balanced"=c(0.5, 0.5), "little unbalanced"=c(0.65, 0.35), "highly unbalanced"=c(0.9, 0.1)))
