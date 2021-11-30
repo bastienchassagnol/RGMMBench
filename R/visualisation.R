@@ -148,13 +148,14 @@ plot_time_computations <- function(time_data) {
       scale_shape_manual(values = c(1:length(unique(data_per_algo[["package"]]))))
 
     # adjust representation according to the varying variables
-    if (length(unique(time_data_summary$prop_outliers)) > 1)
+    if (length(unique(time_data_summary$prop_outliers)) > 1) {
       plot_per_algo <- plot_per_algo +
-        facet_grid(OVL ~ factor(prop_outliers, levels=unique(prop_outliers), labels=unique(paste("outliers:", unique(prop_outliers)))) +
-                     factor(entropy, levels = rev(unique(entropy))))
-    else
+        facet_grid(OVL ~ factor(prop_outliers, levels = unique(prop_outliers), labels = unique(paste("outliers:", unique(prop_outliers)))) +
+          factor(entropy, levels = rev(unique(entropy))))
+    } else {
       plot_per_algo <- plot_per_algo +
         facet_grid(OVL ~ factor(entropy, levels = rev(unique(entropy))))
+    }
     return(plot_per_algo)
   }, splitted_time_data, names(splitted_time_data))
 
