@@ -146,7 +146,7 @@ initialize_em <- function(x = NULL, k = 2, nstart = 10L, short_iter = 200, short
 
     fit <- suppressMessages(rebmix::REBMIX(
       object = "REBMIX", Dataset = list(data.frame(x)), Preprocessing = "kernel density estimation",
-      Restraints = "loose", cmax = k, cmin = k, Criterion = "BIC", pdf = "normal", model = "REBMIX", EMcontrol = EM_control
+      Restraints = "loose", cmax = k, cmin = k - 1, Criterion = "BIC", pdf = "normal", model = "REBMIX", EMcontrol = EM_control
     ))
 
     estimated_theta <- list(p = unlist(fit@w), mu = unlist(fit@Theta[[1]])[seq(2, 3 * k, by = 3)], sigma = unlist(fit@Theta[[1]])[seq(3, 3 * k, by = 3)])

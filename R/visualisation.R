@@ -122,12 +122,13 @@ plot_time_computations <- function(time_data) {
       skew, initialisation_method
     ) %>%
     dplyr::summarise(time_median = log10(median(time)), time_up = log10(quantile(time, probs = 0.95)), time_down = log10(quantile(time, probs = 0.05))) %>%
-    # use of log for visualisation purposes
+    # use of log for visualization purposes
     dplyr::arrange(dplyr::desc(entropy), OVL) %>%
     dplyr::mutate(
       OVL = factor(OVL, labels = paste("Balanced OVL:", unique(OVL)), levels = unique(sort(OVL))),
       entropy = factor(entropy, labels = paste("Entropy:", unique(entropy)), levels = unique(sort(entropy, decreasing = TRUE)))
     )
+
 
   splitted_time_data <- split(time_data_summary, time_data_summary %>% dplyr::pull(initialisation_method))
   time_plots <- Map(function(data_per_algo, name_algo) {
@@ -138,8 +139,6 @@ plot_time_computations <- function(time_data) {
       geom_point(size = 3) +
       geom_line(size = 1.15) +
       geom_ribbon(alpha = 0.1, aes(ymin = time_down, ymax = time_up, fill = package), colour = NA) +
-      facet_grid(OVL ~ factor(entropy, levels = rev(unique(entropy)))) +
-      # facet_grid(~ factor(prop_outliers, levels=unique(prop_outliers), labels=unique(paste("Proportion of outliers:", unique(prop_outliers))))) +
       labs(x = "Number of observations (log10)", y = "Time in seconds (log10)") +
       theme_bw() +
       theme(
@@ -147,6 +146,15 @@ plot_time_computations <- function(time_data) {
         plot.title = element_blank(), legend.text = element_text(size = 25)
       ) +
       scale_shape_manual(values = c(1:length(unique(data_per_algo[["package"]]))))
+
+    # adjust representation according to the varying variables
+    if (length(unique(time_data_summary$prop_outliers)) > 1)
+      plot_per_algo <- plot_per_algo +
+        facet_grid(OVL ~ factor(prop_outliers, levels=unique(prop_outliers), labels=unique(paste("outliers:", unique(prop_outliers)))) +
+                     factor(entropy, levels = rev(unique(entropy))))
+    else
+      plot_per_algo <- plot_per_algo +
+        facet_grid(OVL ~ factor(entropy, levels = rev(unique(entropy))))
     return(plot_per_algo)
   }, splitted_time_data, names(splitted_time_data))
 
