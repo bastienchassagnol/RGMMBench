@@ -12,20 +12,19 @@
 
 
 rnmix_skewed_with_outliers <- function(n,
-                                       theta = list(p = c(0.40, 0.60), mu = c(175, 165), sigma = c(10, 12), skew = c(0, 0)),
+                                       theta = list(p = c(0.40, 0.60), mu = c(175, 165), sigma = c(10, 12)),
                                        prop_outliers = 0, interval = 2) {
   # get values from theta parameter
   p <- theta$p
   mu <- theta$mu
   sigma <- theta$sigma
-  skew <- theta$skew
   k <- length(p)
 
   # generate hidden variables s set
   s <- sample(1:k, size = n, replace = TRUE, prob = p)
 
   # generate observed variable set
-  x <- sn::rsn(n, xi = mu[s], omega = sigma[s], alpha = skew[s])
+  x <- stats::rnorm(n, mean = mu[s], sd = sigma[s])
 
   # select randomly prop_outliers points to be drawn for uniform distribution
   # choice of points such that they are outside quantiles 0.025 of each distribution
@@ -34,18 +33,18 @@ rnmix_skewed_with_outliers <- function(n,
   s_outliers[outliers_indexes] <- 0
 
   # choice of enough ranged random distribution
-  min_component <- which.min(sapply(1:k, function(j) sn::qsn(0.05, xi = mu[j], omega = sigma[j], alpha = skew[j])))
-  max_component <- which.max(sapply(1:k, function(j) sn::qsn(0.95, xi = mu[j], omega = sigma[j], alpha = skew[j])))
-  length_interval <- interval * (sn::qsn(0.95, xi = mu[max_component], omega = sigma[max_component], alpha = skew[max_component]) -
-    sn::qsn(0.05, xi = mu[min_component], omega = sigma[min_component], alpha = skew[min_component]))
+  min_component <- which.min(sapply(1:k, function(j) stats::qnorm(0.05, mean = mu[j], sd = sigma[j])))
+  max_component <- which.max(sapply(1:k, function(j) stats::qnorm(0.95, mean = mu[j], sd = sigma[j])))
+  length_interval <- interval * (stats::qnorm(0.95, mean = mu[max_component], sd = sigma[max_component]) -
+    stats::qnorm(0.05, mean = mu[min_component], sd = sigma[min_component]))
   x[outliers_indexes] <- runif(
     n = round(prop_outliers * n),
-    min = sn::qsn(0.05, xi = mu[min_component], omega = sigma[min_component], alpha = skew[min_component]) - length_interval,
-    max = sn::qsn(0.95, xi = mu[max_component], omega = sigma[max_component], alpha = skew[max_component]) + length_interval
+    min = stats::qnorm(0.01, mean = mu[min_component], sd = sigma[min_component]) - length_interval,
+    max = stats::qnorm(0.99, mean = mu[max_component], sd = sigma[max_component]) + length_interval
   )
 
 
-  return(list(k = k, p = p, mu = mu, sigma = sigma, skew = skew, x = x, s = s, s_outliers = s_outliers))
+  return(list(k = k, p = p, mu = mu, sigma = sigma, x = x, s = s, s_outliers = s_outliers))
 }
 
 
@@ -179,7 +178,6 @@ initialize_em <- function(x = NULL, k = 2, nstart = 10L, short_iter = 200, short
 #' @param epsilon the criterion threshold considered as the tolerance between two consecutive log-likelihoods
 #' @param start list of initial estimates provided by the user
 #' @param initialisation_algorithm,nstart hyper-parameters, when the user rather uses one of our implemented initialization algorithms
-#' @param skew the initial guess of the user on the skewness of the distribution (only relevant for em_mixsmn function)
 #' @param parallel only relevant for GMKMCharlie package which has a native parallel implementation (by default, takes half of the available clusters)
 #' @param prior the mclust object used to store the supposed prior distributions of the parameters' components (only relevant if a Bayesian implementation is required)
 #' @param ... additional parameters for the reviewed packages
@@ -655,7 +653,7 @@ compute_parameters_complete_observations <- function(simulated_distribution) {
     coefs_dp <- sn::coef(model_fitted, param.type = "dp")
     coefs_cp <- sn::coef(model_fitted, param.type = "cp")
     return(list(
-      mu = coefs_dp["xi"], sigma = coefs_dp["omega"],
+      mu = coefs_dp["mean"], sigma = coefs_dp["sd"],
       mean = coefs_cp["mean"], sd = coefs_cp["s.d."]
     ))
   })
