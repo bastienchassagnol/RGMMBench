@@ -9,7 +9,6 @@ compute_microbenchmark(
   sigma_values,
   mean_values,
   proportions,
-  skewness_values,
   prop_outliers = 0,
   nobservations = c(100, 1000, 10000),
   Nbootstrap = 100,
@@ -25,7 +24,7 @@ compute_microbenchmark(
 \arguments{
 \item{mixture_functions}{List of the packages to be compared (Id:name of the package, value: its options)}
 
-\item{sigma_values, mean_values, proportions, skewness_values}{the true parameters to be retrieved}
+\item{sigma_values, mean_values, proportions}{the true parameters to be retrieved}
 
 \item{prop_outliers}{the proportion of outliers added in the simulation}
 

@@ -2,6 +2,7 @@
 % Please edit documentation in R/benchmark.R
 \name{benchmark_distribution_parameters}
 \alias{benchmark_distribution_parameters}
+\alias{benchmark_multivariate_GMM_estimation}
 \title{Launch the benchmark to compare statistical performances between packages}
 \usage{
 benchmark_distribution_parameters(
@@ -9,7 +10,6 @@ benchmark_distribution_parameters(
   sigma_values,
   mean_values,
   proportions,
-  skewness_values,
   prop_outliers = 0,
   nobservations = c(100, 1000, 10000),
   Nbootstrap = 100,
@@ -21,11 +21,27 @@ benchmark_distribution_parameters(
   prior_prob = 0.05,
   initialisation_algorithms = c("kmeans", "quantiles", "random", "hc", "rebmix")
 )
+
+benchmark_multivariate_GMM_estimation(
+  mixture_functions,
+  sigma_values,
+  mean_values,
+  proportions,
+  nobservations = c(2000),
+  Nbootstrap = 100,
+  epsilon = 10^-6,
+  itmax = 1000,
+  nstart = 10L,
+  short_iter = 200,
+  short_eps = 10^-2,
+  prior_prob = 0.05,
+  initialisation_algorithms = c("kmeans", "random", "hc", "rebmix")
+)
 }
 \arguments{
 \item{mixture_functions}{List of the packages to be compared (Id:name of the package, value: its options)}
 
-\item{sigma_values, mean_values, proportions, skewness_values}{the true parameters to be retrieved}
+\item{sigma_values, mean_values, proportions}{the true parameters to be retrieved}
 
 \item{prop_outliers}{the proportion of outliers added in the simulation}
 

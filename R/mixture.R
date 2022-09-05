@@ -1,18 +1,28 @@
 #' Generation of a mixture drawn from an univariate GMM, with possibility to add outliers and skewness
 #'
+#' @details We do not implement the possibility of adding outliers in the multivariate context
+#'
 #' @author Bastien CHASSAGNOL
 #'
+#' @param theta a list with 3 entries:
+#' * The proportions `p`: \eqn{p} of each component (must be included between 0 and 1, and sum to one overall)
+#' * The mean matrix `mu`: \eqn{\mathrm{\mu}=(\mu_{i,j}) \in \mathbb{R}^{n \times k}}, with each column
+#' giving the mean values of the variables within a given component
+#' * The 3-dimensional covariance matrix array `Sigma`: \eqn{\mathrm{\Sigma}=(\Sigma_{i,j,l}) \in \mathbb{R}^{n \times n \times k}}, with each matrix
+#' \eqn{\Sigma_{..l}, l \in \{ 1, \ldots, k\}} storing the covariance matrix of a given component,
+#' whose diagonal terms correspond to the variance of each variable, and off-terms diagonal elements return the covariance matrix
 #' @param n the number of observations to be drawn
-#' @param theta a list with 4 entries, corresponding to the true values of the parameters (proportion p, mean mu, deviation sigma, skewness skew)
-#' @param prop_outliers,interval the proportion of outliers in the mixture, and its range respective to the 0.05 and 0.95 quantiles of the global distribution
 #'
-#' @return a list with the number of components k, the true parameters p, mu, sigma, skew, the observed variables x, the hidden observations s and an indicator of the outliers s_outliers
+#' @return Depending on the univariate or multivariate context:
+#' * a list with the number of components k, the true parameters p, mu, sigma,
+#' the observed variables x, the hidden observations s and an indicator of the outliers s_outliers
+#' * a list with the number of components k, the true parameters p, mu, sigma,
+#' the observations `X` living in space \eqn{\mathbb{R}^k}, the hidden indicator variables `s` (vector of size \eqn{n})
 #'
 #' @export
 
 
-rnmix_skewed_with_outliers <- function(n,
-                                       theta = list(p = c(0.40, 0.60), mu = c(175, 165), sigma = c(10, 12)),
+simulate_univariate_GMM <- function(theta = list(p = c(0.40, 0.60), mu = c(175, 165), sigma = c(10, 12)), n=100,
                                        prop_outliers = 0, interval = 2) {
   # get values from theta parameter
   p <- theta$p
@@ -48,7 +58,50 @@ rnmix_skewed_with_outliers <- function(n,
 }
 
 
-#'  Global function to launch the initialisation step of the EM algorithm
+#' @rdname simulate_univariate_GMM
+#' @export
+
+
+simulate_multivariate_GMM <- function(theta, n=500) {
+  ##################################################################
+  ##                        check validity                        ##
+  ##################################################################
+
+  p <- theta$p; mu <- theta$mu; sigma <- theta$sigma; k <- length(p) # get values from theta parameter
+  dimension_gaussian <- dim(mu)[1]
+
+
+  stopifnot("Parameters provided do not correspond to a fitted GMM estimation"=
+              check_parameters_validity_multivariate(theta)==TRUE)
+
+
+  #################################################################
+  ##                    generate observations                    ##
+  #################################################################
+  # generate hidden variables s set
+  s <- sample(1:k, size = n, replace = TRUE, prob = p)
+
+  # store multi-dimensional matrix, as mvrnorm does not support indexing
+  x <- matrix(0, nrow=n, ncol=dimension_gaussian)
+
+  # generate observed variable set, with each observation drawn from a
+  # multivariate GMM indexed by vector s
+  for (i in 1:n)
+    x[i,] <- MASS::mvrnorm(n = 1, mu=mu[,s[i]], Sigma=sigma[,,s[i]],
+                     tol = 1e-12, empirical = FALSE)
+
+  return(list(k = k, p = p, mu = mu, sigma = sigma, x = x, s = s))
+}
+
+
+#'  Return initial estimates to the EM algorithm for GMM estimation
+#'
+#'  One of the main drawback of the EM algorithm is that it requires initial guess as starting point.
+#'  And so, careful initialisation, depending on the properties of the mixture, is required:
+#'  * `initialize_em_univariate` returns the initial estimates in the univariate dimension.
+#'  * `initialize_em_multivariate`returns the initial estimates in a multivariate context. It's worth noting
+#'  that *quantiles* initialisation method is not available in the multivariate context, as
+#'  no unique set of parametrisation could be returned.
 #'
 #' @author Bastien CHASSAGNOL
 #'
@@ -64,7 +117,7 @@ rnmix_skewed_with_outliers <- function(n,
 #'
 #' @export
 
-initialize_em <- function(x = NULL, k = 2, nstart = 10L, short_iter = 200, short_eps = 10^-2, prior_prob = 0.05,
+initialize_em_univariate <- function(x = NULL, k = 2, nstart = 10L, short_iter = 200, short_eps = 10^-2, prior_prob = 0.05,
                           initialisation_algorithm = c("kmeans", "quantiles", "random", "hc", "small em", "rebmix"), ...) {
   if (is.null(x)) {
     stop("Please provide data for x.")
@@ -123,7 +176,7 @@ initialize_em <- function(x = NULL, k = 2, nstart = 10L, short_iter = 200, short
       # take some random points using EMCluster simple method
       start <- EMCluster::simple.init(as.matrix(x), nclass = k)
       # small runs of EM from mixtools package, as implementing the true EM algorithm
-      fit <- em_Rmixmod(
+      fit <- em_Rmixmod_univariate(
         x = x,
         start = list(p = start$pi, mu = as.vector(start$Mu), sigma = sqrt(as.vector(start$LTSigma))),
         short_eps = short_eps, short_iter = short_iter, k = k
@@ -165,6 +218,94 @@ initialize_em <- function(x = NULL, k = 2, nstart = 10L, short_iter = 200, short
 }
 
 
+#' @rdname initialize_em_univariate
+initialize_em_multivariate <- function(x, k = 2, nstart = 10L, short_iter = 200, short_eps = 10^-2, prior_prob = 0.05,
+                                     initialisation_algorithm = c("kmeans", "random", "hc", "small em", "rebmix"), ...) {
+
+  initialisation_algorithm <- match.arg(
+    initialisation_algorithm,
+    c("kmeans", "random", "hc", "small em", "rebmix")
+  )
+  n <- nrow(x) # number of observations
+  dim_gaussian <- ncol(x) # dimension of the observation space
+
+  ### initialize parametrization
+  if (initialisation_algorithm == "kmeans") {
+    fit <- stats::kmeans(x = x, centers = k, nstart = nstart, iter.max = short_iter)
+    estimated_theta <- estimate_supervised_multivariate_GMM(x=x,s = fit$cluster, k = k)
+
+  }
+  else if (initialisation_algorithm == "random") {
+    all_logs <- lapply(1:nstart, function(y) {
+      fit <- EMCluster::simple.init(x, nclass = k)
+      logLikelihood_per_random <- EMCluster::logL(x, fit)
+      return(list(parameters = fit, logLikelihood = logLikelihood_per_random))
+    })
+
+    best_model <- which.max(all_logs %>% purrr::map_dbl("logLikelihood"))
+    fit <- purrr::map(all_logs, "parameters")[[best_model]]
+    estimated_theta <- list(p = fit$pi, mu = t(fit$Mu),
+                            sigma = trig_mat_to_array(fit$LTSigma))
+  }
+  else if (initialisation_algorithm == "hc") {
+    clustering_hc <- mclust::hcVVV(data = x, minclus = 1, ...)
+    estimated_theta <- estimate_supervised_multivariate_GMM(x=x,
+                                                            s = c(mclust::hclass(clustering_hc, G = k)), k = k)
+  }
+  else if (initialisation_algorithm == "small em") {
+    all_logs <- lapply(1:nstart, function(y) {
+      # take some random points using EMCluster simple method
+      start <- EMCluster::simple.init(as.matrix(x), nclass = k)
+      # small runs of EM from mixtools package, as implementing the true EM algorithm
+      fit <- em_Rmixmod_multivariate(
+        x = x,
+        start = list(p = start$pi, mu = t(start$Mu), sigma = trig_mat_to_array(start$LTSigma)),
+        short_eps = short_eps, short_iter = short_iter, k = k
+      )
+
+      logLikelihood_per_em <- EMCluster::logL(x, pi = fit$p, Mu = t(fit$mu), LTSigma = fit$sigma)
+      return(list(parameters = fit, logLikelihood = logLikelihood_per_em))
+    })
+
+    best_model <- which.max(all_logs %>% purrr::map_dbl("logLikelihood"))
+    estimated_theta <- purrr::map(all_logs, "parameters")[[best_model]]
+  }
+  else if (initialisation_algorithm == "rebmix") {
+    EM_control <- methods::new("EM.Control",
+                               strategy = "exhaustive", variant = "EM", acceleration = "fixed",
+                               acceleration.multiplier = 1, tolerance = short_eps, maximum.iterations = 1
+    )
+
+    # one step of EM is required, just for the computation of the estimated parameters
+    fit <- suppressMessages(rebmix::REBMIX(
+      model = "REBMVNORM", Dataset = list(data.frame(x)), Preprocessing = "kernel density estimation",
+      Restraints = "loose", cmax = k , cmin = k - 1, Criterion = "BIC", EMcontrol = EM_control
+    ))
+
+    mu <- matrix(fit@Theta[[1]][grep("^theta1\\.",names(fit@Theta[[1]]))] %>% unlist() %>% unname(),
+            nrow=dim_gaussian, ncol=k) # estimates are returned as an unique long vector
+
+    sigma <- array(fit@Theta[[1]][seq(3, 3 * k, by = 3)] %>% unlist() %>% unname(),
+                   dim=c(dim_gaussian, dim_gaussian, k))
+    estimated_theta <- list(p = unlist(fit@w), mu = mu, sigma = sigma)
+  }
+
+  ####### order list by mean values, to deal with identifiability issues
+  ordered_components <- do.call(order, estimated_theta$mu %>% as.data.frame())
+  ordered_estimated_theta <- list(
+    p = estimated_theta$p[ordered_components],
+    mu = estimated_theta$mu[, ordered_components],
+    sigma = estimated_theta$sigma[,,ordered_components]
+  )
+
+  # ensure that probabilities sum up to one
+  ordered_estimated_theta$p <- ordered_estimated_theta$p / sum(ordered_estimated_theta$p)
+  ordered_estimated_theta$p[k] <- 1 - sum(ordered_estimated_theta$p[-k])
+  ordered_estimated_theta$p <- ordered_estimated_theta$p %>% as.numeric() %>% unname()
+  return(ordered_estimated_theta)
+}
+
+
 
 
 
@@ -200,7 +341,7 @@ emnmix <- function(x, k, itmax = 5000, epsilon = 10^-12, nstart = 10L, start = N
 
   # get initial estimates if not provided by the user
   if (is.null(start)) {
-    start <- initialize_em(
+    start <- initialize_em_univariate(
       x = x, k = k, nstart = 10L, itmax = 200, epsilon = 10^-2,
       initialisation_algorithm = initialisation_algorithm, ...
     )
@@ -230,7 +371,7 @@ emnmix <- function(x, k, itmax = 5000, epsilon = 10^-12, nstart = 10L, start = N
     sigma <- sqrt((S2 - 2 * mu * S1 + mu^2 * S0) / S0)
 
     # deal with underflow or removal of components
-    if (!check_parameters_validity(list(p = p, mu = mu, sigma = sigma), k = k)) {
+    if (!check_parameters_validity_univariate(list(p = p, mu = mu, sigma = sigma), k = k)) {
       break
     } ## early stop in case the algorithm is trapped in boundary space
 
@@ -256,12 +397,12 @@ emnmix <- function(x, k, itmax = 5000, epsilon = 10^-12, nstart = 10L, start = N
 #' @describeIn emnmix EM implementation with Rmixmod package
 #' @importClassesFrom Rmixmod Strategy GaussianParameter
 #' @export
-em_Rmixmod <- function(x = x, k = 2, initialisation_algorithm = "kmeans",
+em_Rmixmod_univariate <- function(x = x, k = 2, initialisation_algorithm = "kmeans",
                        itmax = 5000, epsilon = 10^-12, start = NULL, ...) {
 
   # initialization section
   if (is.null(start)) {
-    start <- initialize_em(
+    start <- initialize_em_univariate(
       x = x, k = k, nstart = 10L, itmax = 200, epsilon = 10^-2,
       initialisation_algorithm = initialisation_algorithm, ...
     )
@@ -302,6 +443,61 @@ em_Rmixmod <- function(x = x, k = 2, initialisation_algorithm = "kmeans",
 }
 
 
+#' @rdname em_Rmixmod_univariate  EM implementation with Rmixmod package in the mulvariate context
+#' @importClassesFrom Rmixmod Strategy GaussianParameter
+#' @export
+
+
+em_Rmixmod_multivariate <- function(x = x, k = 2, initialisation_algorithm = "kmeans",
+                                  itmax = 5000, epsilon = 10^-12, start = NULL, ...) {
+
+  # initialization section
+  if (is.null(start)) {
+    start <- initialize_em_univariate(
+      x = x, k = k, nstart = 10L, itmax = 200, epsilon = 10^-2,
+      initialisation_algorithm = initialisation_algorithm, ...
+    )
+  }
+
+  # define strategy
+  strategy_Rmixmod <- methods::new("Strategy",
+                                   algo = "EM", nbTryInInit = 10L,
+                                   initMethod = "parameter", nbIterationInAlgo = itmax,
+                                   epsilonInAlgo = epsilon,
+                                   parameter = methods::new("GaussianParameter",
+                                                            proportions = start$p,
+                                                            mean = start$mu,
+                                                            variance = lapply(seq(dim(start$sigma)[3]), function(x) start$sigma[ , , x])
+                                   )
+  )
+
+  # fit the model
+  fit <- Rmixmod::mixmodCluster(
+    data = x %>% as.data.frame(), nbCluster = k, dataType = "quantitative",
+    strategy = strategy_Rmixmod
+  )@bestResult@parameters
+
+  fit <- list(
+    p = fit@proportions,
+    mu = fit@mean,
+    sigma = fit@variance %>% simplify2array()
+  )
+
+  # return an ordered list by mean values
+  ordered_components <- do.call(order, fit$mu %>% as.data.frame())
+  ordered_estimated_theta <- list(
+    p = fit$p[ordered_components],
+    mu = fit$mu[, ordered_components],
+    sigma = fit$sigma[,,ordered_components]
+  )
+
+  return(ordered_estimated_theta)
+}
+
+
+
+
+
 #' @describeIn emnmix EM implementation with EMCluster package
 #' @export
 em_EMCluster <- function(x = x, k = 2, initialisation_algorithm = "kmeans",
@@ -309,7 +505,7 @@ em_EMCluster <- function(x = x, k = 2, initialisation_algorithm = "kmeans",
 
   # initialization section
   if (is.null(start)) {
-    start <- initialize_em(
+    start <- initialize_em_univariate(
       x = x, k = k, nstart = 10L, itmax = 200, epsilon = 10^-2,
       initialisation_algorithm = initialisation_algorithm, ...
     )
@@ -349,7 +545,7 @@ em_bgmm <- function(x = x, k = 2, itmax = 5000, epsilon = 10^-12,
 
   # initialization section
   if (is.null(start)) {
-    start <- initialize_em(
+    start <- initialize_em_univariate(
       x = x, k = k, nstart = 10L, itmax = 200, epsilon = 10^-2,
       initialisation_algorithm = initialisation_algorithm, ...
     )
@@ -391,7 +587,7 @@ em_flexmix <- function(x = x, k = 2, itmax = 5000, epsilon = 10^-12,
 
   # initialization section
   if (is.null(start)) {
-    start <- initialize_em(
+    start <- initialize_em_univariate(
       x = x, k = k, nstart = 10L, itmax = 200, epsilon = 10^-2,
       initialisation_algorithm = initialisation_algorithm, ...
     )
@@ -429,7 +625,7 @@ em_mixtools <- function(x = x, k = 2, initialisation_algorithm = "hc",
                         itmax = 5000, epsilon = 10^-12, start = NULL, ...) {
   # initialization section
   if (is.null(start)) {
-    start <- initialize_em(
+    start <- initialize_em_univariate(
       x = x, k = k, nstart = 10L, itmax = 200, epsilon = 10^-2,
       initialisation_algorithm = initialisation_algorithm, ...
     )
@@ -459,7 +655,7 @@ em_mclust <- function(x = x, k = 2, initialisation_algorithm = "hc", start = NUL
   control <- mclust::emControl(tol = epsilon, itmax = itmax)
   # initialization section
   if (is.null(start)) {
-    start <- initialize_em(
+    start <- initialize_em_univariate(
       x = x, k = k, nstart = 10L, itmax = 200, epsilon = 10^-2,
       initialisation_algorithm = initialisation_algorithm, ...
     )
@@ -487,7 +683,7 @@ em_DCEM <- function(x = x, k = 2, initialisation_algorithm = "hc",
                     itmax = 5000, epsilon = 10^-12, start = NULL, ...) {
   # initialization section
   if (is.null(start)) {
-    start <- initialize_em(
+    start <- initialize_em_univariate(
       x = x, k = k, nstart = 10L, itmax = 200, epsilon = 10^-2,
       initialisation_algorithm = initialisation_algorithm, ...
     )
@@ -511,11 +707,11 @@ em_DCEM <- function(x = x, k = 2, initialisation_algorithm = "hc",
 # em algorithm for mixture models using GMKMcharlie package
 #' @describeIn emnmix EM implementation with GMKMcharlie package
 #' @export
-em_GMKMcharlie <- function(x = x, k = 2, initialisation_algorithm = "hc",
+em_GMKMcharlie_univariate <- function(x = x, k = 2, initialisation_algorithm = "hc",
                            itmax = 5000, epsilon = 10^-12, start = NULL, parallel = FALSE, ...) {
   # initialization section
   if (is.null(start)) {
-    start <- initialize_em(
+    start <- initialize_em_univariate(
       x = x, k = k, nstart = 10L, itmax = 200, epsilon = 10^-2,
       initialisation_algorithm = initialisation_algorithm, ...
     )
@@ -536,6 +732,39 @@ em_GMKMcharlie <- function(x = x, k = 2, initialisation_algorithm = "hc",
   ordered_estimated_theta <- ordered_estimated_theta %>% purrr::map(unname)
   return(ordered_estimated_theta)
 }
+
+
+# em algorithm for multivariate mixture models using GMKMcharlie package
+#' @describeIn emnmix EM implementation with GMKMcharlie package
+#' @export
+em_GMKMcharlie_multivariate <- function(x = x, k = 2, initialisation_algorithm = "hc",
+                                      itmax = 5000, epsilon = 10^-12, start = NULL, parallel = FALSE, ...) {
+  # initialization section
+  if (is.null(start)) {
+    start <- initialize_em_univariate(
+      x = x, k = k, nstart = 10L, itmax = 200, epsilon = 10^-2,
+      initialisation_algorithm = initialisation_algorithm, ...
+    )
+  }
+
+  avalaible_processors <- ifelse(parallel, parallel::detectCores() %/% 2, 1)
+  fit <- GMKMcharlie::GM(t(as.matrix(x)),
+                         alpha = start$p, mu = t(as.matrix(start$mu)), sigma = t(as.matrix(start$sigma)), G = k,
+                         convergenceEPS = epsilon, maxIter = itmax, maxCore = avalaible_processors, verbose = FALSE
+  )
+
+  # return an ordered list by mean values
+  ordered_estimated_theta <- list(
+    p = fit$alpha[order(fit$mu)],
+    mu = sort(fit$mu),
+    sigma = sqrt(unlist(fit$sigma[order(fit$mu)]))
+  )
+  ordered_estimated_theta <- ordered_estimated_theta %>% purrr::map(unname)
+  return(ordered_estimated_theta)
+}
+
+
+
 
 
 #' @describeIn emnmix EM implementation with otrimle package (designed to deal with outliers especially)
@@ -565,47 +794,7 @@ em_otrimle <- function(x = x, k = 2, initialisation_algorithm = "hc",
 }
 
 
-#' @describeIn emnmix EM implementation with mixsmsn package (designed to deal with skewed GMMs especially)
-#' @export
-em_mixsmsn <- function(x = x, k = 2, initialisation_algorithm = "hc", skew = rep(0, k),
-                       itmax = 5000, epsilon = 10^-12, start = NULL, ...) {
-  if (is.null(start)) {
-    start <- initialize_em(
-      x = x, k = k, nstart = 10L, itmax = 200, epsilon = 10^-2,
-      initialisation_algorithm = initialisation_algorithm, ...
-    )
-  }
 
-  # nu is the kurtosis, always equal to 3 for a classic Gaussian distribution(not skewed)
-  if (all(skew == 0)) {
-    # fit a classic Gaussian distribution
-    fit <- mixsmsn::smsn.mix(
-      y = x, nu = 3,
-      mu = start$mu, sigma2 = start$sigma^2, shape = skew, pii = start$p,
-      g = 2, get.init = FALSE, criteria = FALSE, group = FALSE, family = "Normal",
-      error = 10^-12, iter.max = 5000, calc.im = FALSE
-    )
-  } else {
-    # fit a skewed distribution
-    fit <- mixsmsn::smsn.mix(
-      y = x, nu = 3,
-      mu = start$mu, sigma2 = start$sigma, shape = skew, pii = start$p,
-      g = 2, get.init = FALSE, criteria = FALSE, group = FALSE, family = "Skew.normal",
-      error = 10^-12, iter.max = 5000, calc.im = FALSE
-    )
-  }
-
-
-  # return an ordered list by mean values
-  ordered_estimated_theta <- list(
-    p = fit$pii[order(fit$mu)],
-    mu = sort(fit$mu),
-    sigma = sqrt(fit$sigma2[order(fit$mu)])
-  )
-
-  ordered_estimated_theta <- ordered_estimated_theta %>% purrr::map(unname)
-  return(ordered_estimated_theta)
-}
 
 
 
@@ -613,21 +802,22 @@ em_mixsmsn <- function(x = x, k = 2, initialisation_algorithm = "hc", skew = rep
 #'
 #' @author Bastien CHASSAGNOL
 #'
-#' @param simulated_distribution the object returned by generating a sample drawn from a GMM
+#' @param x the univariate or multivariate distribution of observed variables
+#' @param s the index of the clusters, ranging from 1 to \eqn{k}, the number of clusters
+#' @param s_outliers binary index, with 0 corresponding to outlying points
+#' @param k the number of classes (by default, the number of unique values within the indicator vector)
 #'
-#' @return observed_estimated_theta a list of the estimated parameters in supervised case
+#' @return a list with three arguments, respectively the proportions, the means, and the variance / covariance
 #'
-#' @seealso  \code{\link{rnmix_skewed_with_outliers}}
+#' @seealso  \code{\link{simulate_univariate_GMM}}
 #'
 #' @export
 
-# retrieve the parameters, when the latent variable S is observed
-compute_parameters_complete_observations <- function(simulated_distribution) {
+estimate_supervised_univariate_GMM <- function(x, s, s_outliers=s) {
 
   ##### retrieve relevant values
   x <- simulated_distribution$x
   s_outliers <- simulated_distribution$s_outliers
-  skew <- simulated_distribution$skew
   k <- simulated_distribution$k
 
   # remove outliers
@@ -638,15 +828,7 @@ compute_parameters_complete_observations <- function(simulated_distribution) {
     names(unlist(simulated_distribution[c("p", "mu", "sigma")])),
     paste0("mean", 1:k), paste0("sd", 1:k)
   )
-
-  # assumption of skewness or not for data, depending on skewness parameters
-  skewed <- NULL
-  if (all(skew == 0)) {
-    skewed <- list(alpha = 0)
-  }
-
   ##### retrieve the parameters
-
   parameters_per_component <- lapply(split(x, f = as.factor(s_outliers)), function(x_subset) {
     # fit model for each component
     model_fitted <- sn::selm(x_subset ~ 1, family = "SN", fixed.param = skewed)
@@ -667,7 +849,34 @@ compute_parameters_complete_observations <- function(simulated_distribution) {
 }
 
 
+#' @rdname estimate_supervised_univariate_GMM
+#' @export
 
+estimate_supervised_multivariate_GMM <- function(x, s, k=2) {
+  k <- length(unique(s)); dim_gaussian <- ncol(x); n <- nrow(x)
+  mu <- matrix(0, nrow = dim_gaussian, ncol=k); sigma <- array(0, dim=c(dim_gaussian, dim_gaussian, k))
+
+  # estimate the ratios
+  p <- table(s)/n
+
+  for (j in 1:k) {
+    mu[,j] <- apply(x[s==j,], 2, mean) # estimate the means
+    sigma[,,j] <- cov_MLE(x[s==j, ]) # estimate covariances
+  }
+
+  return(list(p=p, mu=mu, sigma=sigma))
+}
+
+
+
+
+#' @title Helper functions for the parameter estimation of GMMs
+#'
+#' @description These functions are small chunks of code designed to decompose the computation of the EM algorithm into simpler steps.
+#' `logsumexp` returns the computation of equation \eqn{\log(\exp(sum(x)))}, avoiding numerical overflows
+#'
+#' @param l a vector of numeric terms
+#' @return a numeric scalar value, result of the previously described equation
 
 logsumexp <- function(l) {
   i <- which.max(l)
@@ -676,6 +885,16 @@ logsumexp <- function(l) {
   return(res)
 }
 
+
+#' @describeIn logsumexp `predict_posterior_probability` returns the expected probability for each observation
+#' to belong to any of the \eqn{k} clusters set a priori, given the estimated parameters
+#'
+#' @param x the vector of observed values, of size \eqn{n}
+#' @param estimated_theta the estimated parameters
+#' @return a list with two elements:
+#' * the posterior probability matrix, `eta`: \eqn{\eta=(\eta_{i,j}) \in [0, 1]^{n \times k}}, with \eqn{\eta_{i,j}}
+#' giving the posterior probability of observation \eqn{i} to belong to cluster \eqn{j}
+#' * `loglik` returns the expected log-likelihood of our experiment
 
 predict_posterior_probability <- function(x, estimated_theta) {
   # get relevant parameters
@@ -697,21 +916,33 @@ predict_posterior_probability <- function(x, estimated_theta) {
 }
 
 
-check_parameters_validity <- function(estimated_theta, k = 2) {
+#' Check whether the estimation has been trapped in the boundary space
+#'
+#' * Function `check_parameters_validity_univariate` asserts at each step of the EM algorithm that
+#' it doesn't fall in a degenerate case (either the package performing the EM computation has failed, and returns an
+#' error message, or the algorithm is trapped in the boundary space, leading to inconsistent division by zero).
+#' * Function `check_parameters_validity_multivariate` has the same functionality, but
+#' is adjusted to multivariate parametrisation, and includes additionally a checking whether
+#' the covariance matrix is positive definite or not
+#'
+#' @seealso [logsumexp()]
+#' @export
+
+check_parameters_validity_univariate <- function(theta, k = 2) {
   machine_limit <- .Machine$double.eps
   machine_max <- .Machine$double.xmax
-  estimated_theta <- estimated_theta[c("p", "mu", "sigma")]
-  if (any(is.na(unlist(estimated_theta))) | length(unlist(estimated_theta)) == 0) {
+  theta <- theta[c("p", "mu", "sigma")]
+  if (any(is.na(unlist(theta))) | length(unlist(theta)) == 0) {
     warning(paste0(
-      "Missing data with estimated theta, with ratios: ", paste(estimated_theta$p, collapse = " / "), ", ",
-      "mu: ", paste(estimated_theta$mu, collapse = " / "), " and sigma: ", paste(estimated_theta$sigma, collapse = " / ")
+      "Missing data with estimated theta, with ratios: ", paste(theta$p, collapse = " / "), ", ",
+      "mu: ", paste(theta$mu, collapse = " / "), " and sigma: ", paste(theta$sigma, collapse = " / ")
     ))
     return(FALSE)
-  } else if (any(estimated_theta$p < machine_limit | estimated_theta$p > 1 - machine_limit) |
-    any(estimated_theta$sigma < machine_limit) | any(estimated_theta$sigma > machine_max) | any(sapply(estimated_theta, length) != k)) {
+  } else if (any(theta$p < machine_limit | theta$p > 1 - machine_limit) |
+    any(theta$sigma < machine_limit) | any(theta$sigma > machine_max) | any(sapply(theta, length) != k)) {
     warning(paste0(
-      "Out of computational data with estimated theta, with ratios: ", paste(estimated_theta$p, collapse = " / "), ", ",
-      "mu: ", paste(estimated_theta$mu, collapse = " / "), " and sigma: ", paste(estimated_theta$sigma, collapse = " / ")
+      "Numerical overflow with estimated theta, with ratios: ", paste(theta$p, collapse = " / "), ", ",
+      "mu: ", paste(theta$mu, collapse = " / "), " and sigma: ", paste(theta$sigma, collapse = " / ")
     ))
     return(FALSE)
   } else {
@@ -720,67 +951,50 @@ check_parameters_validity <- function(estimated_theta, k = 2) {
 }
 
 
+#' @rdname check_parameters_validity_univariate
+check_parameters_validity_multivariate <- function(theta, k = length(theta$p)) {
+  machine_limit <- .Machine$double.eps; machine_max <- .Machine$double.xmax
+  is_valid_parametrisation <- TRUE # store whether the parametrisation is correctly performed
 
-#' Compute the shannon entropy of a discrete distribution, normalised from 0 to 1 (equibalanced classes)
-#'
-#' @author Bastien CHASSAGNOL
-#'
-#' @param ratios vector of the proportions of the mixture
-#' @return the entropy score
-#' @export
+  p <- theta$p; mu <- theta$mu; sigma <- theta$sigma; k <- length(p) # get values from theta parameter
+  dimension_gaussian <- dim(mu)[1]
 
-
-compute_shannon_entropy <- function(ratios) {
-  if (min(ratios) < 0 | max(ratios) > 1) {
-    stop("Probabilities must be stricly included between 0 and 1")
+  if (any(is.na(unlist(theta))) | length(unlist(theta)) == 0) {
+    warning("NA values or no output from the estimation"); is_valid_parametrisation <- FALSE
   }
 
-  # normalization process + remove NULL components, as information fisher is not modified by empty classes
-  ratios <- ratios[ratios != 0]
-  ratios <- ratios / sum(ratios)
+  # check the parametrisation of proportions (sum-to-one constraint)
+  if (sum(p)!=1 | any(p<machine_limit) | any(p>1 - machine_limit)) {
+    warning("One at least of your proportions does not enforce the sum-to-one constraint"); is_valid_parametrisation <- FALSE
+  }
 
-  # entropy included between 0 (one component storing all information) and 1 (uniform distribution, balanced classes)
-  return(-sum(ratios * logb(ratios, base = length(ratios))))
+  # check parametrisation of means
+  if (!all.equal(dim(mu),c(dimension_gaussian, k)) | any(c(mu) > machine_max)) {
+    warning("The mean parameter must be of dimension ndim * k, with k the number of clusters"); is_valid_parametrisation <- FALSE
+  }
+
+  # check the parametrisation of covariance
+  if (!all.equal(dim(sigma), c(dimension_gaussian, dimension_gaussian, k)) | any(c(sigma) > machine_max)) {
+    warning("the covariance array stores for each component a variance matrix of fixed size k"); is_valid_parametrisation <- FALSE
+  }
+  else {
+    for (j in 1:k) {
+      if (!is_positive_definite(sigma[,,j])) {
+        warning(glue::glue("Covariance matrix for component {j} is not positive definite")); is_valid_parametrisation <- FALSE
+        break
+      }
+    }
+  }
+
+  return(is_valid_parametrisation)
 }
 
 
-#  function used to compute bias and mse of a distribution
-get_local_scores <- function(estimated_theta, true_theta, alpha = 0.2) {
-  names_param <- names(unlist(true_theta[c("p", "mu", "sigma")]))
-  mean_parameter <- apply(estimated_theta[, names_param], 2, mean) # mean of the distribution
-  empiric_sds <- apply(estimated_theta[, names_param], 2, sd) # sd of the distribution
-  bias <- apply(estimated_theta, 2, mean) - unlist(true_theta) # bias of the distribution
-  mse <- apply(estimated_theta, 2, var) + bias^2 # mse of the distribution
-  return(tibble::tibble(
-    scores = c("mean", "sd", "bias", "mse"),
-    dplyr::bind_rows(mean_parameter, empiric_sds, bias, mse)
-  ))
-}
 
 
-#' Compute the intersection points between two Gaussian mixtures (where one component goes above the other)
-#'
-#' @author Bastien CHASSAGNOL
-#'
-#' @param p1,p2,mu1,mu2,sigma1,sigma2 parameters of the two Gaussian components
-#' @return the overlap roots
-#' @export
 
-compute_overlap_roots <- function(p1, p2, mu1, mu2, sigma1, sigma2) {
-  # homoscedastic case, only one intersection point
-  if (sigma1 == sigma2) {
-    return((sigma1^2 * log(p2 / p1)) / (mu1 - mu2) + (mu1 + mu2) / 2)
-  }
-  # heteroscedastic case, existence of two intersections points
-  # conditioned on the proportions
-  else if ((sigma2 > sigma1 & p1 > (sigma1 / (sigma1 + sigma2))) |
-    (sigma2 < sigma1 & p1 < (sigma1 / (sigma1 + sigma2)))) {
-    variant_part <- sigma1 * sigma2 * sqrt((mu1 - mu2)^2 + 2 * (sigma2^2 - sigma1^2) * (log(p1 / p2) + log(sigma2 / sigma1)))
-    return(c(
-      (sigma1^2 * mu2 - sigma2^2 * mu1 - variant_part) / (sigma1^2 - sigma2^2),
-      (sigma1^2 * mu2 - sigma2^2 * mu1 + variant_part) / (sigma1^2 - sigma2^2)
-    ))
-  } else {
-    stop("There's no intersection point in that configuration")
-  }
-}
+
+
+
+
+

@@ -1,14 +1,57 @@
-test_that("multiplication works", {
-  expect_equal(2 * 2, 4)
+# grep -rl 'em_Rmixmod_univariate_GMM' | xargs -i@ sed -i 's/em_Rmixmod_univariate_GMM/em_Rmixmod_univariate/g' @
+test_that("simulation of univariate or multivariate GMM", {
+  set.seed(20)
+  # define parameters of a two component multivariate GMM
+  true_theta <- list(p=c(0.2, 0.8),
+                     mu=matrix(c(20, 22, 22, 20), nrow = 2),
+                     sigma=array(c(1, 0.2, 0.2, 1, 1, -0.2, 0.2, 1), dim=c(2, 2, 2)))
+
+  expect_true(check_parameters_validity_multivariate(true_theta, k=2))
+
+  multivariate_simulation <- simulate_multivariate_GMM (theta=true_theta, n=100)
+
+  expect_equal(multivariate_simulation,
+                   readRDS(test_path("fixtures", "two_component_multivariate_GMM.rds")))
+
+
+
+  true_theta <- list(p=c(0.5, 0.5),
+                     mu=matrix(c(20, 40, 40, 20), nrow = 2),
+                     sigma=array(c(1, 0.2, 0.2, 1, 1, -0.2, 0.2, 1), dim=c(2, 2, 2)))
+  multivariate_simulation <- simulate_multivariate_GMM (theta=true_theta, n=1000)
+
+  inititial_kmeans_estimates <- initialize_em_multivariate(multivariate_simulation$x, k = 2,
+                                                    initialisation_algorithm = "kmeans")
+
+  inititial_small_EM_estimates <- initialize_em_multivariate(multivariate_simulation$x, k = 2,
+                                                           initialisation_algorithm = "small em")
+
+  Rmixmod_multi_estimates <- em_Rmixmod_multivariate (x = multivariate_simulation$x, k = 2,
+                                                      itmax = 200, epsilon = 10^-6,
+                                                      start = inititial_kmeans_estimates)
+
+  expect_error(initialize_em_multivariate(multivariate_simulation$x, k = 2,
+                                          initialisation_algorithm = "quantiles"))
+
 })
 
 
-test_that("entropy function", {
-  expect_equal(compute_shannon_entropy(c(0.5, 0.5)), 1)
+test_that("GMM estimation in supervised case", {
+  set.seed(20)
+  true_theta <- list(p=c(0.2, 0.8),
+                     mu=matrix(c(20, 20, 20, 40, 40, 40), nrow = 3),
+                     sigma=array(rep(c(1, 0, 0.1, 0, 1, -0.1, 0.1, -0.1, 1), 2), dim=c(3, 3, 2)))
+
+  multivariate_simulation <- simulate_multivariate_GMM (theta=true_theta, n=2000)
+  estimated_theta <- estimate_supervised_multivariate_GMM(multivariate_simulation$x, multivariate_simulation$s)
+
+  expect_equal(estimated_theta,
+               readRDS(test_path("fixtures", "two_component_3D_supervised_estimation.rds")))
 })
 
-# simulated_data <- rnmix_skewed_with_outliers(200, theta = list(
-#   p = c(0.5, 0.5),
-#   mu = c(0, 4), sigma = c(0.3, 0.3),
-#   skew = c(0, 0)
-# ))
+
+
+
+
+
+

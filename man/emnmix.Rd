@@ -9,9 +9,9 @@
 \alias{em_mixtools}
 \alias{em_mclust}
 \alias{em_DCEM}
-\alias{em_GMKMcharlie}
+\alias{em_GMKMcharlie_univariate}
+\alias{em_GMKMcharlie_multivariate}
 \alias{em_otrimle}
-\alias{em_mixsmsn}
 \title{Custom R implementation of the EM algorithm}
 \usage{
 emnmix(
@@ -96,7 +96,18 @@ em_DCEM(
   ...
 )
 
-em_GMKMcharlie(
+em_GMKMcharlie_univariate(
+  x = x,
+  k = 2,
+  initialisation_algorithm = "hc",
+  itmax = 5000,
+  epsilon = 10^-12,
+  start = NULL,
+  parallel = FALSE,
+  ...
+)
+
+em_GMKMcharlie_multivariate(
   x = x,
   k = 2,
   initialisation_algorithm = "hc",
@@ -113,17 +124,6 @@ em_otrimle(
   initialisation_algorithm = "hc",
   itmax = 5000,
   epsilon = 10^-12,
-  ...
-)
-
-em_mixsmsn(
-  x = x,
-  k = 2,
-  initialisation_algorithm = "hc",
-  skew = rep(0, k),
-  itmax = 5000,
-  epsilon = 10^-12,
-  start = NULL,
   ...
 )
 }
@@ -145,8 +145,6 @@ em_mixsmsn(
 \item{prior}{the mclust object used to store the supposed prior distributions of the parameters' components (only relevant if a Bayesian implementation is required)}
 
 \item{parallel}{only relevant for GMKMCharlie package which has a native parallel implementation (by default, takes half of the available clusters)}
-
-\item{skew}{the initial guess of the user on the skewness of the distribution (only relevant for em_mixsmn function)}
 }
 \value{
 a list of the estimated parameters, ordered by increasing mean for identifiability issues
@@ -170,11 +168,11 @@ Custom R implementation of the EM algorithm
 
 \item \code{em_DCEM}: EM implementation with DCEM package
 
-\item \code{em_GMKMcharlie}: EM implementation with GMKMcharlie package
+\item \code{em_GMKMcharlie_univariate}: EM implementation with GMKMcharlie package
+
+\item \code{em_GMKMcharlie_multivariate}: EM implementation with GMKMcharlie package
 
 \item \code{em_otrimle}: EM implementation with otrimle package (designed to deal with outliers especially)
-
-\item \code{em_mixsmsn}: EM implementation with mixsmsn package (designed to deal with skewed GMMs especially)
 }}
 
 \author{
