@@ -9,7 +9,8 @@ plot_boxplots_parameters(
   p,
   mu,
   sigma,
-  with_outliers = FALSE
+  remove_outliers = T,
+  size_tag = 8
 )
 }
 \arguments{

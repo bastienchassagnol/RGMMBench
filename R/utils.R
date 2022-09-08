@@ -37,9 +37,9 @@ compute_overlap_roots <- function(p1, p2, mu1, mu2, sigma1, sigma2) {
 
 
 get_local_scores <- function(estimated_theta, true_theta) {
-  names_param <- names(unlist(true_theta[c("p", "mu", "sigma")]))
-  mean_parameter <- apply(estimated_theta[, names_param], 2, mean) # mean of the distribution
-  empiric_sds <- apply(estimated_theta[, names_param], 2, sd) # sd of the distribution
+  # names_param <- names(unlist(true_theta[c("p", "mu", "sigma")]))
+  mean_parameter <- apply(estimated_theta, 2, mean) # mean of the distribution
+  empiric_sds <- apply(estimated_theta, 2, sd) # sd of the distribution
   bias <- apply(estimated_theta, 2, mean) - unlist(true_theta) # bias of the distribution
   mse <- apply(estimated_theta, 2, var) + bias^2 # mse of the distribution
   return(tibble::tibble(
@@ -92,26 +92,6 @@ is_positive_definite <- function(cov_matrix, tol=1e-6) {
   return(all(eigen_values >= -tol))
 }
 
-
-#' Compute the MLE covariance matrix estimate
-#'
-#' [stats::cov()] function does not compute the MLE estimate of the covariance matrix,
-#' but its unbiased version, with at the denominator, a \eqn{n-1} denominator that returns an unbiased estimate
-#' of the covariance matrix.
-#'
-#' @param x the set of multi-observations, for which we would like to compute the covariance
-#' @return the covariance matrix of the observations, as its MLE biased estimation
-#'
-#' @author Bastien CHASSAGNOL
-#'
-#' @export
-
-cov_MLE <- function(x) {
-  n <- nrow(x)
-  return(((n-1)/n) * cov(x))
-}
-
-
 #' Convert vector to symmetric matrix
 #'
 #' Reverse operation of \code{upper.tri} or \code{lower.tri}. Given a vector of
@@ -121,7 +101,8 @@ cov_MLE <- function(x) {
 #' column (the default) or by row.
 #'
 #' @details Many thanks for the author of the `patr1ckm` package for providing us this method,
-#' [patr1ckm::vec2sym()], enabling to revert an `upper.tri` or `lower.tri` operation.
+#' [Handy R functions](https://rdrr.io/github/patr1ckm/patr1ckm/man/vec2sym.html),
+#'  enabling to revert an `upper.tri` or `lower.tri` operation.
 #'
 #' @param x vector containing upper or lower triangular elements of a symmetric matrix
 #' @param If NULL, x contains diagonal elements. Otherwise a value or vector of the appropriate length to be placed on the diagonal.
@@ -187,6 +168,7 @@ vec2sym <- function(x,diagonal=NULL,lower=TRUE,byrow=FALSE){
 #'
 #' @return a large array, of dimension \eqn{p \times p \times k}: one array of covariance matrix,
 #' on the third dimension, for each component
+#' @export
 
 trig_mat_to_array <- function(x, transposed=TRUE, ...) {
 
@@ -205,6 +187,25 @@ trig_mat_to_array <- function(x, transposed=TRUE, ...) {
   return(cov_matrix)
 }
 
+#' Convert an array of covariance matrices to short lower triangular format
+#'
+#' @seealso [trig_mat_to_array()], which is the reciprocal operation
+#' @export
+
+array_to_trig_mat <- function(x, transposed=TRUE) {
+  k <- dim(x)[3]; dim_gaussian <- dim(x)[2]
+  dim_triangular <- ((dim_gaussian + 1) * dim_gaussian)/2
+
+  trig_matrix <- matrix(0, nrow = k, ncol = dim_triangular)
+  for (j in 1:k) {
+    # recover elements from the lower traingular part of the covariance matrix, left to right, up to bottom
+    trig_matrix[j, ] <- x[,,j][lower.tri(x[,,j], diag = TRUE)] %>% as.vector()
+  }
+  if (!transposed)
+    trig_matrix <- t(trig_matrix)
+  return(trig_matrix)
+}
+
 #' Test whether a number is an integer
 #'
 #' @param x (a numeric input of size 1 (real number))
@@ -215,15 +216,100 @@ is_integer <- function(x) {
   return(x%%1 == 0)
 }
 
+#' Control parameters output
+#'
+#' This step ensures that the estimates returned are uniquely ordered by
+#' partial ordering on the means, and that the sum-o-one constraint, that may
+#' be violated by numerical artefacts, is enforced
+#'
+#'
+#' @param theta estimation of the parameters returned either by an initialisation
+#' algorithm or by an EM algorithm on an univariate or multivariate GMM MLE estimation
+#' * The proportions `p`: \eqn{p} of each component (must be included between 0 and 1, and sum to one overall)
+#' * The mean matrix `mu`: \eqn{\mathrm{\mu}=(\mu_{i,j}) \in \mathbb{R}^{n \times k}}, with each column
+#' giving the mean values of the variables within a given component
+#' * The 3-dimensional covariance matrix array `Sigma`: \eqn{\mathrm{\Sigma}=(\Sigma_{i,j,l}) \in \mathbb{R}^{n \times n \times k}}, with each matrix
+#' \eqn{\Sigma_{..l}, l \in \{ 1, \ldots, k\}} storing the covariance matrix of a given component,
+#' whose diagonal terms correspond to the variance of each variable, and off-terms diagonal elements return the covariance matrix
+#' @param n the number of observations to be drawn
+#'
+#' @return a list of the estimates, uniquely identified, by ranking each component
+#' based on the ordering of their means
+
+enforce_identifiability <- function(theta) {
+  k <- length(theta$p)
+
+  if (is.array(theta$sigma)) {
+    # in that case, we are in a multivariate context
+    ordered_components <- do.call(order, theta$mu %>% as.data.frame())
+    ordered_theta <- list(
+      p = theta$p[ordered_components],
+      mu = theta$mu[, ordered_components],
+      sigma = theta$sigma[,,ordered_components]
+    )
+  }
+  else {
+    # univariate context
+    ordered_theta <- list(
+      p = theta$p[order(theta$mu)],
+      mu = sort(theta$mu),
+      sigma = theta$sigma[order(theta$mu)]
+    )
+  }
+
+  # enforce sum-to-one constraint
+  ordered_theta <- ordered_theta %>% purrr::map(function(x) unname(x))
+  ordered_theta$p <- ordered_theta$p / sum(ordered_theta$p)
+  ordered_theta$p[k] <- 1 - sum(ordered_theta$p[-k])
+  return(ordered_theta)
+}
+
+test_function <- function(x, w) {
+  return (apply(x, 2, function(column) {
+    prin(column)
+    stats::weighted.mean(column, w)}
+    ))
+}
+
+
+#' Format the estimated parameters
+#'
+#' Especially, we remove redundant pairwise correlations, and name adequatly each parameter
+#'
+#' @author Bastien CHASSAGNOL
+#'
+#' @param theta a list with 3 entries:
+#' * The proportions `p`: \eqn{p} of each component (must be included between 0 and 1, and sum to one overall)
+#' * The mean matrix `mu`: \eqn{\mathrm{\mu}=(\mu_{i,j}) \in \mathbb{R}^{n \times k}}, with each column
+#' giving the mean values of the variables within a given component
+#' * The 3-dimensional covariance matrix array `Sigma`: \eqn{\mathrm{\Sigma}=(\Sigma_{i,j,l}) \in \mathbb{R}^{n \times n \times k}},
+#'  with each matrix \eqn{\Sigma_{..l}, l \in \{ 1, \ldots, k\}} storing the covariance matrix of a given component,
+#' whose diagonal terms correspond to the variance of each variable, and off-terms diagonal elements return the covariance matrix
+
+
+format_theta_output <- function(theta) {
+  mu <- theta$mu; sigma <- theta$sigma; p <- theta$p
+  dim_gaussian <- nrow(mu); k <- length(p)
+
+  formatted_p <- stats::setNames(p, nm=paste0("p", 1:k))
+  formatted_mu <- stats::setNames(mu %>% t() %>% as.vector(),
+                                  nm = tidyr::crossing(variable=paste0("mu_var", 1:dim_gaussian), component=paste0("comp", 1:k)) %>%
+                                    tidyr::unite(col="names_mu", variable, component) %>% dplyr::pull(names_mu))
+
+  names_sigma <- c()
+  for (j in 1:k) {
+    for(i in 1:dim_gaussian) {
+      for (l in i:dim_gaussian) {
+        names_sigma <- c(names_sigma, glue::glue("sd_var{l}_var{i}_comp{j}"))
+      }
+    }
+  }
+  formatted_sigma <- stats::setNames(sigma %>% array_to_trig_mat(transposed = F) %>% as.vector(), names_sigma)
+  return(c(formatted_p, formatted_mu, formatted_sigma))
+}
 
 
 
-
-# logLikelihood <- EMCluster::logL(as.matrix(simulated_distribution$x),
-#                                  emobj = list(
-#                                    pi = missing_estimated_theta_list$p, Mu = as.matrix(missing_estimated_theta_list$mu),
-#                                    LTSigma = as.matrix(missing_estimated_theta_list$sigma^2)
-#                                  ))
 
 
 # # aggregate scores obtained per parameter
@@ -254,7 +340,7 @@ is_integer <- function(x) {
 
 
 
-#' #' @describeIn emnmix EM implementation with mixsmsn package (designed to deal with skewed GMMs especially)
+#' #' @describeIn emnmix_univariate EM implementation with mixsmsn package (designed to deal with skewed GMMs especially)
 #' #' @export
 #' em_mixsmsn <- function(x = x, k = 2, initialisation_algorithm = "hc", skew = rep(0, k),
 #'                        itmax = 5000, epsilon = 10^-12, start = NULL, ...) {

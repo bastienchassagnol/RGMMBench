@@ -1,23 +1,37 @@
 
 relevant_mixture_functions <- list(
-  "em R" = list(name_fonction = emnmix, list_params = list()),
-  "Rmixmod" = list(name_fonction = em_Rmixmod, list_params = list()),
-  "mixtools" = list(name_fonction = em_mixtools, list_params = list()),
-  "bgmm" = list(name_fonction = em_bgmm, list_params = list()),
-  "mclust" = list(name_fonction = em_mclust, list_params = list(prior = NULL)),
-  "EMCluster" = list(name_fonction = em_EMCluster, list_params = list()),
-  "GMKMcharlie" = list(name_fonction = em_GMKMcharlie, list_params = list()),
-  "flexmix" = list(name_fonction = em_flexmix, list_params = list()),
-  "DCEM" = list(name_fonction = em_DCEM, list_params = list())
-)
+  "em R" = list(name_fonction = emnmix_multivariate, list_params = list()),
+  "Rmixmod" = list(name_fonction = em_Rmixmod_multivariate, list_params = list()),
+  "mixtools" = list(name_fonction = em_mixtools_multivariate, list_params = list()),
+  "bgmm" = list(name_fonction = em_bgmm_multivariate, list_params = list()),
+  "mclust" = list(name_fonction = em_mclust_multivariate, list_params = list(prior = NULL)),
+  "EMCluster" = list(name_fonction = em_EMCluster_multivariate, list_params = list()),
+  "GMKMcharlie" = list(name_fonction = em_GMKMcharlie_multivariate, list_params = list()),
+  "flexmix" = list(name_fonction = em_flexmix_multivariate, list_params = list()),
+  "DCEM" = list(name_fonction = em_DCEM_multivariate, list_params = list()))
 
-# parameters_distribution <- benchmark_distribution_parameters(
-#   mixture_functions = relevant_mixture_functions,
-#   initialisation_algorithms = c("kmeans", "quantiles"),
-#   sigma_values = list("small OVL" = c(0.3, 0.3)),
-#   mean_values = list(c(0, 4)),
-#   proportions = list("balanced" = c(0.5, 0.5)), prop_outliers = c(0),
-#   Nbootstrap = 5, nobservations = c(200))
+
+corr_sequence <- seq(-0.8, 0.8, 0.2)
+sigma_values <- list()
+for (corr_1 in corr_sequence) {
+  for (corr_2 in corr_sequence) {
+    sigma_values[[glue::glue("comp_1_corr_{corr_1}_comp_2_{corr_2}")]] <-
+      array(c(1, corr_1, corr_1, 1, 1, corr_2, corr_2, 1), dim = c(2, 2, 2))
+  }
+}
+
+
+multi_parameters_distribution <- benchmark_multivariate_GMM_estimation(
+  mixture_functions = relevant_mixture_functions,
+  initialisation_algorithms = c("kmeans", "random", "hc", "small em", "rebmix"),
+  sigma_values = sigma_values,
+  mean_values = list("small OVL"=matrix(c(20, 40, 40, 20), nrow = 2, ncol = 2)),
+  # mean_values = list("high OVL"=matrix(c(20, 22, 22, 20), nrow = 2, ncol = 2),
+  #                    "small OVL"=matrix(c(20, 40, 40, 20), nrow = 2, ncol = 2)),
+  proportions = list("balanced" = c(0.5, 0.5)),
+  Nbootstrap = 100, nobservations = c(1000))
+
+
 
 
 #

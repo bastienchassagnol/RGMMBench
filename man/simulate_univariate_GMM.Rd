@@ -3,7 +3,7 @@
 \name{simulate_univariate_GMM}
 \alias{simulate_univariate_GMM}
 \alias{simulate_multivariate_GMM}
-\title{Generation of a mixture drawn from an univariate GMM, with possibility to add outliers and skewness}
+\title{Generation of a mixture drawn from an univariate GMM, with possibility to add outliers}
 \usage{
 simulate_univariate_GMM(
   theta = list(p = c(0.4, 0.6), mu = c(175, 165), sigma = c(10, 12)),
@@ -37,7 +37,7 @@ the observations \code{X} living in space \eqn{\mathbb{R}^k}, the hidden indicat
 }
 }
 \description{
-Generation of a mixture drawn from an univariate GMM, with possibility to add outliers and skewness
+Generation of a mixture drawn from an univariate GMM, with possibility to add outliers
 }
 \details{
 We do not implement the possibility of adding outliers in the multivariate context

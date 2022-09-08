@@ -11,7 +11,8 @@
 #' @export
 
 
-plot_boxplots_parameters <- function(distribution_parameters, p, mu, sigma, with_outliers = FALSE) {
+plot_boxplots_parameters <- function(distribution_parameters, p, mu, sigma,
+                                     remove_outliers = T, size_tag=8) {
 
   # format true theta values, according to their use
   true_theta <- list(p = p, mu = mu, sigma = sigma) # true parameters of the distribution
@@ -22,7 +23,7 @@ plot_boxplots_parameters <- function(distribution_parameters, p, mu, sigma, with
     dplyr::mutate(name_parameter = factor(name_parameter, levels = unique(name_parameter)))
   k <- length(p) # number of components
 
-  if (!with_outliers) {
+  if (remove_outliers) {
     distribution_parameters <- distribution_parameters %>%
       dplyr::group_by(name_parameter) %>%
       dplyr::filter(value_parameter > (quantile(value_parameter, probs = c(0.25)) - 1.5 * IQR(value_parameter)) &
@@ -154,87 +155,108 @@ plot_time_computations <- function(time_data) {
 }
 
 
-#' Plot the true density distributions
+#' Plot the true density distributions, in the univariate context
 #'
 #' @author Bastien CHASSAGNOL
 #'
-#' @param proportions,mean_values,sigma_values,skewness_values parameters of the several components represented,
+#' @param proportions,mean_values,sigma_values parameters of the several components represented,
 #' represented by a list of vector parameters
 #'
 #' @return density_plots a ggplot object representing the distributions of the density functions
 #'
 #' @export
 
-plot_density_distribution <- function(proportions, mean_values,
-                                      sigma_values, skewness_values) {
-  density_plots <- list()
-  iteration <- 1
-  #################################################################
-  ##               generation of the distributions               ##
-  #################################################################
-  for (skew in skewness_values) {
-    for (p in proportions) {
+plot_univariate_normal_density_distribution <- function(sigma_values, mean_values, proportions) {
+
+  individual_plots <- list() # store for each plot its corresponding configuration
+  for(p in proportions) {
+    for (sigma in sigma_values) {
       for (mu in mean_values) {
-        for (sigma in sigma_values) {
-          true_theta <- list(p = p, mu = mu, sigma = sigma, skew = skew) # true parameters of the distribution
-          k <- length(p) # number of components
-          if (any(sapply(true_theta, length) != k)) {
-            stop("One of the original componenent is not completely provided")
-          }
-
-          # compute 0.001 and 0.999 quantiles of min and max components
-          min_value <- sapply(1:k, function(i) {
-            sn::qsn(0.001, xi = true_theta$mu[i], omega = true_theta$sigma[i], alpha = true_theta$skew[i], tau = 0)
-          }) %>% min()
-          max_value <- sapply(1:k, function(i) {
-            sn::qsn(0.999, xi = true_theta$mu[i], omega = true_theta$sigma[i], alpha = true_theta$skew[i], tau = 0)
-          }) %>% max()
-
-          distribution_data <- tibble::tibble(x = seq(min_value, max_value, length.out = 10000))
-          # add a column for each component
-          for (i in 1:k) {
-            distribution_data <- distribution_data %>% tibble::add_column("component {i}" := true_theta$p[i] *
-              sn::dsn(distribution_data$x, xi = true_theta$mu[i], omega = true_theta$sigma[i], alpha = true_theta$skew[i], tau = 0))
-          }
-
-          distribution_data <- distribution_data %>%
-            dplyr::mutate(total = rowSums(dplyr::across(dplyr::starts_with("component ")))) %>%
-            tidyr::pivot_longer(cols = dplyr::starts_with(c("component ", "total")), names_to = "components", values_to = "expression") %>%
-            dplyr::mutate(skew = skew[1], components = as.factor(gsub("total", "mixture\ndistribution", gsub("component ", "", components))))
-
-
-          ##################################################################
-          ##               plot the simulated distributions               ##
-          ##################################################################
-          plot_title <- ""
-          for (i in 1:k) {
-            plot_title <- paste0(
-              plot_title, "Component ", i, " has parameters ",
-              "p", i, ": ", signif(true_theta$p[i], digits = 2), ", ",
-              "mu", i, ": ", true_theta$mu[i], ", ",
-              "sigma", i, ": ", true_theta$sigma[i], ", ",
-              "skew", i, ": ", true_theta$skew[i], ".\n"
-            )
-          }
-
-          density_plots[[paste("Plot ", iteration)]] <- ggplot(distribution_data, aes(
-            x = x, color = components, y = expression,
-            linetype = components, alpha = components, size = components
-          )) +
-            geom_line(key_glyph = draw_key_path) +
-            theme_bw() +
-            theme(
-              plot.title = element_blank(), legend.position = "bottom", axis.title = element_blank(), plot.subtitle = element_text(hjust = 0.5),
-              legend.title = element_blank(), legend.text = element_text(size = 25), legend.key.width = unit(1.5, "cm")
-            ) +
-            labs(subtitle = plot_title) +
-            scale_linetype_manual(values = c(2:(k + 1), 1)) +
-            scale_alpha_manual(values = c(rep(1, k), 0.25)) +
-            scale_size_manual(values = c(rep(1, k), 2))
-          iteration <- iteration + 1
+        # format true theta values, according to their use
+        true_theta <- list(p=p, mu=mu, sigma=sigma) # true parameters of the distribution
+        k <- length(p) # number of components
+        if (any(sapply(true_theta, length)!=k)) {
+          stop("One of the original componenent is not completely provided")
         }
+        # compute average OVL, average pairwise overlap including proportions and UR for each set of parameter
+        balanced_ovl <- MixSim::overlap(Pi=rep(1/k, k), Mu=as.matrix(true_theta$mu), S=as.matrix(true_theta$sigma))$BarOmega
+        entropy_value <- compute_shannon_entropy(p)
+        # pairwise_ovl <- MixSim::overlap(Pi=true_theta$p, Mu=as.matrix(true_theta$mu), S=as.matrix(true_theta$sigma))$BarOmega
+
+        filename <- paste0("entropy_", signif(entropy_value, digits = 2),"_OVL_", signif(balanced_ovl, digits = 2))
+
+        # compute quantiles of min and max components
+        min_comp <- which.min(true_theta$mu); max_comp <- which.max(true_theta$mu)
+        min_value <- stats::qnorm(0.01, mean=true_theta$mu[min_comp], sd = true_theta$sigma[min_comp])
+        max_value <- stats::qnorm(0.99, mean=true_theta$mu[max_comp], sd= true_theta$sigma[max_comp])
+        # min_value <- -2; max_value <- 15
+
+        temp_simu <- tibble::tibble(x=seq(min_value, max_value, length.out = 500))
+        # add a column for each component
+        for (i in 1:k) {
+          temp_simu <- temp_simu %>% tibble::add_column("component {i}" := true_theta$p[i] *
+                                                          stats::dnorm(temp_simu$x, mean=true_theta$mu[i], sd = true_theta$sigma[i]))
+        }
+
+        temp_simu <- temp_simu %>% dplyr::mutate(total=rowSums(dplyr::across(dplyr::starts_with("component ")))) %>%
+          tidyr::pivot_longer(cols =dplyr::starts_with(c("component ", "total")), names_to = "components", values_to = "expression") %>%
+          dplyr::mutate(entropy=signif(entropy_value, digits = 2), OVL=signif(balanced_ovl, digits = 2),
+                        components=as.factor(gsub("total", "mixture\ndistribution",gsub("component ", "", components))))
+
+
+        individual_plots[[filename]] <- ggplot(temp_simu, aes(x = x, color = components, y=expression,
+                                                              linetype=components, alpha=components, size = components)) +
+          geom_line(key_glyph = draw_key_path) +
+          theme_bw() +
+          theme(plot.title = element_blank(), legend.position = "bottom", axis.title=element_blank(),
+                plot.subtitle = element_blank(), legend.title = element_blank(),
+                legend.text = element_text(size = 25), legend.key.width = unit(1.5, 'cm'),
+                plot.tag = element_text(size=18, face = "bold")) +
+          # labs(subtitle = title_dp) +
+          scale_linetype_manual(values = c(2:(k+1), 1)) +
+          scale_alpha_manual(values = c(rep(1, k), 0.25)) +
+          scale_size_manual(values = c(rep(1, k), 2))
       }
     }
   }
-  return(density_plots)
+  return(individual_plots)
+}
+
+#' Plot Correlation Heatmap
+#'
+#' For each configuration of parameter, compare the similarity between the algorithms
+#' for each initialisation algorithm, by computing the correlation between
+#' their estimates
+#'
+#' @param distribution_parameters A tibble with the distribution of the parameters,
+#' in the long format
+#'
+#' @export
+
+plot_correlation_Heatmap <- function(distribution_parameters) {
+  distribution_parameters <- distribution_parameters %>% dplyr::group_by(OVL, entropy, algorithm, name_parameter, initialisation_method) %>%
+    mutate(index=dplyr::row_number()) %>% dplyr::ungroup() # add an index, ti uniquely identify each experiment
+
+
+  # compute correlation matrix
+  total_correlation_scores_global <- lapply(split(distribution_parameters, distribution_parameters$initialisation_method),
+                                            function(x) {
+                                              cor_data <- tidyr::pivot_wider(x, names_from = c("algorithm"), values_from="value_parameter") %>%
+                                                dplyr::select(unique(x %>% dplyr::pull(algorithm))) %>% stats::cor(use="complete.obs")
+                                              return(cor_data)
+                                            })
+
+  # generate associated Heatmap, for each initialisation algorithm
+  total_correlation_scores_plots <- Map(function(cor_matrix, init_method) {
+    complex_heatmap <- ComplexHeatmap::Heatmap(cor_matrix, name = "mat", heatmap_legend_param = list(title = ""),
+                                               cluster_rows = TRUE, row_names_gp = grid::gpar(fontsize = 8), row_labels = colnames(cor_matrix),
+                                               row_title_gp = grid::gpar(fontsize = 4), column_names_rot = 45,
+                                               cluster_columns = TRUE, column_names_gp = grid::gpar(fontsize = 8), column_labels = colnames(cor_matrix),
+                                               width = unit(8, "cm"), height = unit(8, "cm"),
+                                               column_title = paste("Initialization method:", init_method),
+                                               column_title_gp = grid::gpar(fontsize = 10, fontface = "bold"))
+    return(grid::grid.grabExpr(ComplexHeatmap::draw(complex_heatmap)))
+  }, total_correlation_scores_global, names(total_correlation_scores_global))
+
+  return(total_correlation_scores_plots)
 }

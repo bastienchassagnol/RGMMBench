@@ -20,7 +20,7 @@
 #'
 #' @export
 
-benchmark_distribution_parameters <- function(mixture_functions,
+benchmark_univariate_GMM_estimation <- function(mixture_functions,
                                               sigma_values, mean_values, proportions,
                                               prop_outliers = 0, nobservations = c(100, 1000, 10000),
                                               Nbootstrap = 100, epsilon = 10^-6, itmax = 1000,
@@ -141,11 +141,11 @@ benchmark_distribution_parameters <- function(mixture_functions,
 
 
 
-#' @rdname benchmark_distribution_parameters
+#' @rdname benchmark_univariate_GMM_estimation
 #' @export
 
 benchmark_multivariate_GMM_estimation <- function(mixture_functions,
-                                              sigma_values, mean_values, proportions,
+                                              mean_values, proportions, sigma_values,
                                               nobservations = c(2000), Nbootstrap = 100, epsilon = 10^-6, itmax = 1000,
                                               nstart = 10L, short_iter = 200, short_eps = 10^-2, prior_prob = 0.05,
                                               initialisation_algorithms = c("kmeans", "random", "hc", "rebmix")) {
@@ -165,12 +165,15 @@ benchmark_multivariate_GMM_estimation <- function(mixture_functions,
         #################################################################
         ##               simulation scenario description               ##
         #################################################################
-        true_theta <- list(p = p, mu = mu, sigma = sigma) # true parameters of the distribution
-        k <- length(p) # number of components
-        bootstrap_colnames <- names(unlist(true_theta[c("p", "mu", "sigma")])) # labels used for naming the parameters
-        balanced_ovl <- MixSim::overlap(Pi = rep(1 / k, k), Mu = true_theta$mu, S = true_theta$sigma)$BarOmega %>%
+        true_theta <- list(p = p, mu = mu, sigma = sigma)
+        formatted_true_theta <- true_theta %>% format_theta_output()
+        k <- length(p); bootstrap_colnames <- names(formatted_true_theta)
+        message(paste("We aim at learning the following estimates: \n",
+                      paste0(bootstrap_colnames, ": ", formatted_true_theta, collapse=" // ")))
+        # bootstrap_colnames <- names(unlist(true_theta[c("p", "mu", "sigma")])) # labels used for naming the parameters
+        balanced_ovl <- MixSim::overlap(Pi = rep(1 / k, k), Mu = mu, S = sigma)$BarOmega %>%
           signif(digits = 2)# compute OVL
-        pairwise_ovl <- MixSim::overlap(Pi = true_theta$p, Mu = true_theta$mu, S = true_theta$sigma)$BarOmega %>%
+        pairwise_ovl <- MixSim::overlap(Pi = p, Mu = mu, S = sigma)$BarOmega %>%
           signif(digits = 2)
         entropy_value <- compute_shannon_entropy(p) %>% signif(digits = 2) # compute entropy
 
@@ -185,7 +188,7 @@ benchmark_multivariate_GMM_estimation <- function(mixture_functions,
               ##################################################################
               ##             estimation of the initial estimates             ##
               ##################################################################
-              start <- initialize_em_univariate(
+              start <- initialize_em_multivariate(
                 x = simulated_distribution$x, k = k, nstart = nstart,
                 short_iter = short_iter, short_eps = short_eps, initialisation_algorithm = init_algo
               )
@@ -194,9 +197,9 @@ benchmark_multivariate_GMM_estimation <- function(mixture_functions,
               ##################################################################
               for (index in 1:length(mixture_functions)) {
                 # retrieve function values
-                mixture_function <- mixture_functions[[index]]$name_fonction
-                package_name <- names(mixture_functions)[index]
+                mixture_function <- mixture_functions[[index]]$name_fonction; package_name <- names(mixture_functions)[index]
                 success_estimation <- TRUE # checking that the algorithm is not trapped in boundary space or simply failed
+                # message(glue::glue("Package is {package_name}, with following initialisation method {init_algo}."))
                 tryCatch(
                   {
                     missing_estimated_theta_list <- do.call(mixture_function, c(
@@ -211,24 +214,25 @@ benchmark_multivariate_GMM_estimation <- function(mixture_functions,
                   }
                 )
                 if (!check_parameters_validity_multivariate(missing_estimated_theta_list, k = k) | !success_estimation) {
+                  dir.create("./errors", showWarnings = F, recursive = T)
+                  saveRDS(object = list(simulated_distribution=simulated_distribution, start=start),
+                          file = glue::glue("./errors/package_{package_name}_init_algo_{init_algo}.rds"))
                   warning(paste("Estimates trapped in the boundary space or failure of the package", package_name))
                   next
                 }
                 # normalize returned estimates
-                missing_estimated_theta_list <- missing_estimated_theta_list[c("p", "mu", "sigma")]
-                missing_estimated_theta_list$p <- missing_estimated_theta_list$p / sum(missing_estimated_theta_list$p)
-                missing_estimated_theta <- stats::setNames(unlist(missing_estimated_theta_list), bootstrap_colnames)
+                missing_estimated_theta <- missing_estimated_theta_list %>% format_theta_output()
 
                 # store distribution of the estimates
                 distribution_parameters_temp <- distribution_parameters_temp %>%
                   dplyr::bind_rows(tibble::tibble(
-                    package = package_name,
-                    initialisation_method = init_algo,
+                    package = package_name, initialisation_method = init_algo,
                     tibble::as_tibble_row(missing_estimated_theta), OVL = balanced_ovl, OVL_pairwise = pairwise_ovl,
                     entropy = entropy_value, nobservations = n, N.bootstrap = t))
 
               } # estimation per package
             } # initialization algorithm
+            # message(glue::glue("Bootstrap {t} has been performed.\n\n"))
           } # bootstrap repetitions
 
           #################################################################
@@ -239,18 +243,18 @@ benchmark_multivariate_GMM_estimation <- function(mixture_functions,
           # summary scores per parameter
           local_scores_temp <- distribution_parameters_temp %>%
             dplyr::group_by(initialisation_method, package) %>%
-            dplyr::summarize(get_local_scores(dplyr::cur_data() %>%
-                                                dplyr::select(dplyr::all_of(bootstrap_colnames)), true_theta[c("p", "mu", "sigma")])) %>%
+            dplyr::summarize(get_local_scores(dplyr::cur_data() %>% dplyr::select(dplyr::all_of(bootstrap_colnames)),
+                                              formatted_true_theta)) %>%
             tibble::add_column(
               OVL = balanced_ovl, entropy = entropy_value,
               OVL_pairwise = pairwise_ovl,  nobservations = n
             )
           local_scores <- local_scores %>% dplyr::bind_rows(local_scores_temp)
+          message("One configuration of parameter has been fully completed.\n\n")
         } # number of observations
       }
     }
   } ##### theta configuration
-
 
   return(list("distributions" = distribution_parameters, "local_scores" = local_scores))
 }
@@ -305,7 +309,7 @@ compute_microbenchmark <- function(mixture_functions,
             #################################################################
             ##               simulation scenario description               ##
             #################################################################
-            true_theta <- list(p = p, mu = mu, sigma = sigma) # true parameters of the distribution
+            true_theta <- true_theta # true parameters of the distribution
             k <- length(p) # number of components
             bootstrap_colnames <- names(unlist(true_theta[c("p", "mu", "sigma")])) # labels used for naming the parameters
             balanced_ovl <- MixSim::overlap(Pi = rep(1 / k, k), Mu = as.matrix(true_theta$mu), S = as.matrix(true_theta$sigma))$BarOmega %>%
