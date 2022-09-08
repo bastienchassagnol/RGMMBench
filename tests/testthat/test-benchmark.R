@@ -1,7 +1,8 @@
+set.seed(20)
 
 relevant_mixture_functions <- list(
   "em R" = list(name_fonction = emnmix_multivariate, list_params = list()),
-  "Rmixmod" = list(name_fonction = em_Rmixmod_multivariate, list_params = list()),
+  "Rmixmod" = list(name_fonction = RGMMBench::em_Rmixmod_multivariate, list_params = list()),
   "mixtools" = list(name_fonction = em_mixtools_multivariate, list_params = list()),
   "bgmm" = list(name_fonction = em_bgmm_multivariate, list_params = list()),
   "mclust" = list(name_fonction = em_mclust_multivariate, list_params = list(prior = NULL)),
@@ -19,7 +20,16 @@ for (corr_1 in corr_sequence) {
       array(c(1, corr_1, corr_1, 1, 1, corr_2, corr_2, 1), dim = c(2, 2, 2))
   }
 }
+test_parameters_distribution <- benchmark_multivariate_GMM_estimation(
+  mixture_functions = relevant_mixture_functions[1],
+  initialisation_algorithms = c("kmeans"),
+  sigma_values = sigma_values[1],
+  mean_values = list("high OVL"=matrix(c(20, 22, 22, 20), nrow = 2, ncol = 2)),
+  proportions = list("balanced"=c(0.5, 0.5)),
+  Nbootstrap = 1, nobservations = c(500))
 
+# saveRDS(test_parameters_distribution,
+#         file.path("/home/bncl_cb/rstudio/working/mixture_models/results", "multivariate_test_distribution.rds"))
 
 multi_parameters_distribution <- benchmark_multivariate_GMM_estimation(
   mixture_functions = relevant_mixture_functions,
@@ -35,11 +45,11 @@ multi_parameters_distribution <- benchmark_multivariate_GMM_estimation(
 
 
 #
-capture.output(running_times <- compute_microbenchmark(
-  mixture_functions = relevant_mixture_functions, sigma_values = list("null OVL" = rep(0.3, 4)),
-  mean_values = list(c(0, 4)), proportions = list("balanced" = c(0.5, 0.5)), prop_outliers = c(0),
-  Nbootstrap = 2, nobservations = c(50, 100), initialisation_algorithms = c("quantiles")
-)) %>% invisible()
+# capture.output(running_times <- compute_microbenchmark(
+#   mixture_functions = relevant_mixture_functions, sigma_values = list("null OVL" = rep(0.3, 4)),
+#   mean_values = list(c(0, 4)), proportions = list("balanced" = c(0.5, 0.5)), prop_outliers = c(0),
+#   Nbootstrap = 2, nobservations = c(50, 100), initialisation_algorithms = c("quantiles")
+# )) %>% invisible()
 
 
 #

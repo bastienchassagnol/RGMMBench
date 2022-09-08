@@ -464,6 +464,7 @@ emnmix_multivariate <- function(x, k, itmax = 5000, epsilon = 10^-12, nstart = 1
     }
 
 
+    # print(paste("iter is", iter, "with p being", paste(p)))
     # deal with underflow or removal of components
     if (!check_parameters_validity_multivariate(list(p = p, mu = mu, sigma = sigma), k = k)) {
       break
@@ -482,6 +483,8 @@ emnmix_multivariate <- function(x, k, itmax = 5000, epsilon = 10^-12, nstart = 1
 
 
 #' @rdname emnmix_univariate
+#' @importClassesFrom Rmixmod Strategy GaussianParameter
+#' @export
 em_Rmixmod_univariate <- function(x = x, k = 2, initialisation_algorithm = "kmeans",
                                   itmax = 5000, epsilon = 10^-12, start = NULL, ...) {
 
@@ -523,6 +526,7 @@ em_Rmixmod_univariate <- function(x = x, k = 2, initialisation_algorithm = "kmea
 
 
 #' @rdname emnmix_multivariate
+#' @export
 em_Rmixmod_multivariate <- function(x = x, k = 2, initialisation_algorithm = "kmeans",
                                     itmax = 5000, epsilon = 10^-12, start = NULL, ...) {
 
@@ -568,6 +572,7 @@ em_Rmixmod_multivariate <- function(x = x, k = 2, initialisation_algorithm = "km
 
 
 #' @rdname emnmix_univariate
+#' @export
 em_EMCluster_univariate <- function(x = x, k = 2, initialisation_algorithm = "kmeans",
                                     itmax = 5000, epsilon = 10^-12, start = NULL, ...) {
 
@@ -599,6 +604,7 @@ em_EMCluster_univariate <- function(x = x, k = 2, initialisation_algorithm = "km
 }
 
 #' @rdname emnmix_multivariate
+#' @export
 em_EMCluster_multivariate <- function(x = x, k = 2, initialisation_algorithm = "kmeans",
                                       itmax = 5000, epsilon = 10^-12, start = NULL, ...) {
 
@@ -630,6 +636,7 @@ em_EMCluster_multivariate <- function(x = x, k = 2, initialisation_algorithm = "
 
 
 #' @rdname emnmix_univariate
+#' @export
 em_bgmm_univariate <- function(x = x, k = 2, itmax = 5000, epsilon = 10^-12,
                                initialisation_algorithm = "kmeans", start = NULL, ...) {
 
@@ -665,6 +672,7 @@ em_bgmm_univariate <- function(x = x, k = 2, itmax = 5000, epsilon = 10^-12,
 }
 
 #' @rdname emnmix_multivariate
+#' @export
 em_bgmm_multivariate <- function(x = x, k = 2, itmax = 5000, epsilon = 10^-12,
                                  initialisation_algorithm = "kmeans", start = NULL, ...) {
 
@@ -712,6 +720,7 @@ em_bgmm_multivariate <- function(x = x, k = 2, itmax = 5000, epsilon = 10^-12,
 
 
 #' @rdname emnmix_univariate
+#' @export
 em_flexmix_univariate <- function(x = x, k = 2, itmax = 5000, epsilon = 10^-12,
                                   initialisation_algorithm = "kmeans", start = NULL, ...) {
 
@@ -744,6 +753,7 @@ em_flexmix_univariate <- function(x = x, k = 2, itmax = 5000, epsilon = 10^-12,
 }
 
 #' @rdname emnmix_multivariate
+#' @export
 em_flexmix_multivariate <- function(x = x, k = 2, itmax = 5000, epsilon = 10^-12, minprior=0.05,
                                     initialisation_algorithm = "kmeans", start = NULL, ...) {
 
@@ -793,6 +803,7 @@ em_flexmix_multivariate <- function(x = x, k = 2, itmax = 5000, epsilon = 10^-12
 
 
 #' @rdname emnmix_univariate
+#' @export
 em_mixtools_univariate <- function(x = x, k = 2, initialisation_algorithm = "hc",
                                    itmax = 5000, epsilon = 10^-12, start = NULL, ...) {
   # initialization section
@@ -815,6 +826,7 @@ em_mixtools_univariate <- function(x = x, k = 2, initialisation_algorithm = "hc"
 }
 
 #' @rdname emnmix_multivariate
+#' @export
 em_mixtools_multivariate <- function(x = x, k = 2, initialisation_algorithm = "hc",
                                      itmax = 5000, epsilon = 10^-12, start = NULL, ...) {
   # initialization section
@@ -839,6 +851,7 @@ em_mixtools_multivariate <- function(x = x, k = 2, initialisation_algorithm = "h
 }
 
 #' @rdname emnmix_univariate
+#' @export
 em_mclust_univariate <- function(x = x, k = 2, initialisation_algorithm = "hc", start = NULL,
                                  itmax = 5000, epsilon = 10^-12, prior = NULL, ...) {
 
@@ -868,6 +881,7 @@ em_mclust_univariate <- function(x = x, k = 2, initialisation_algorithm = "hc", 
 }
 
 #' @rdname emnmix_multivariate
+#' @export
 em_mclust_multivariate <- function(x = x, k = 2, initialisation_algorithm = "hc", start = NULL,
                                    itmax = 5000, epsilon = 10^-12, prior = NULL, ...) {
 
@@ -906,6 +920,7 @@ em_mclust_multivariate <- function(x = x, k = 2, initialisation_algorithm = "hc"
 
 
 #' @rdname emnmix_univariate
+#' @export
 em_DCEM_univariate <- function(x = x, k = 2, initialisation_algorithm = "hc",
                                itmax = 5000, epsilon = 10^-12, start = NULL, ...) {
   # initialization section
@@ -932,6 +947,7 @@ em_DCEM_univariate <- function(x = x, k = 2, initialisation_algorithm = "hc",
 }
 
 #' @rdname emnmix_multivariate
+#' @export
 em_DCEM_multivariate <- function(x = x, k = 2, initialisation_algorithm = "hc",
                                  itmax = 5000, epsilon = 10^-12, start = NULL, ...) {
   # initialization section
@@ -959,6 +975,7 @@ em_DCEM_multivariate <- function(x = x, k = 2, initialisation_algorithm = "hc",
 
 
 #' @rdname emnmix_univariate
+#' @export
 em_GMKMcharlie_univariate <- function(x = x, k = 2, initialisation_algorithm = "hc", embedNoise = 1e-6,
                                       itmax = 5000, epsilon = 10^-12, start = NULL, parallel = FALSE, ...) {
   # initialization section
@@ -985,6 +1002,7 @@ em_GMKMcharlie_univariate <- function(x = x, k = 2, initialisation_algorithm = "
 
 
 #' @rdname emnmix_multivariate
+#' @export
 em_GMKMcharlie_multivariate <- function(x = x, k = 2, initialisation_algorithm = "hc", embedNoise = 1e-6,
                                         itmax = 5000, epsilon = 10^-12, start = NULL, parallel = FALSE, ...) {
   # initialization section
@@ -1014,6 +1032,7 @@ em_GMKMcharlie_multivariate <- function(x = x, k = 2, initialisation_algorithm =
 
 
 #' @rdname emnmix_univariate
+#' @export
 em_otrimle <- function(x = x, k = 2, initialisation_algorithm = "hc",
                        itmax = 5000, epsilon = 10^-12, ...) {
   if (initialisation_algorithm == "hc") {
@@ -1140,6 +1159,7 @@ logsumexp <- function(l) {
 #' * the posterior probability matrix, `eta`: \eqn{\eta=(\eta_{i,j}) \in [0, 1]^{n \times k}}, with \eqn{\eta_{i,j}}
 #' giving the posterior probability of observation \eqn{i} to belong to cluster \eqn{j}
 #' * `loglik` returns the expected log-likelihood of our experiment
+#' @export
 
 predict_posterior_probability <- function(x, estimated_theta) {
   k <- length(estimated_theta$p)
@@ -1219,7 +1239,7 @@ check_parameters_validity_multivariate <- function(theta, k = length(theta$p)) {
   }
 
   # check the parametrisation of proportions (sum-to-one constraint)
-  if (sum(p)!=1 | any(p<machine_limit) | any(p>1 - machine_limit)) {
+  if (abs(sum(p) - 1) > 10^-6 | any(p<machine_limit) | any(p>1 - machine_limit)) {
     warning("One at least of your proportions does not enforce the sum-to-one constraint"); is_valid_parametrisation <- FALSE
   }
 

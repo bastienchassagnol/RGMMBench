@@ -87,10 +87,19 @@ test_that("GMM estimation in unsupervised case", {
                                                         itmax = 1, epsilon = 10^-6, embedNoise = 0,
                                                         start = inititial_kmeans_estimates, parallel = F)
 
+
+
   expect_equal(own_EM_implementation, flexmix_multi_estimates) # GMKMCharlie as well
 
 
 
+})
+
+test_that("specific focus on my own developped function", {
+  start <- readRDS("./errors/package_em R_init_algo_kmeans.rds")$start
+  multivariate_simulation <- readRDS("./errors/package_em R_init_algo_kmeans.rds")$simulated_distribution
+  own_EM_implementation <- emnmix_multivariate (x = multivariate_simulation$x, k = 2,
+                                                itmax = 100, epsilon = 10^-6, start = start)
 })
 
 
