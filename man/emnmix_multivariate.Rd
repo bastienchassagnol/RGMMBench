@@ -21,6 +21,7 @@ emnmix_multivariate(
   start = NULL,
   initialisation_algorithm = "kmeans",
   method = "ML",
+  verbose = F,
   ...
 )
 

@@ -20,13 +20,15 @@ for (corr_1 in corr_sequence) {
       array(c(1, corr_1, corr_1, 1, 1, corr_2, corr_2, 1), dim = c(2, 2, 2))
   }
 }
+
+# simulated_distribution <- readRDS("./errors/package_em R_init_algo_rebmix.rds")$simulated_distribution
 test_parameters_distribution <- benchmark_multivariate_GMM_estimation(
-  mixture_functions = relevant_mixture_functions[1],
-  initialisation_algorithms = c("kmeans"),
-  sigma_values = sigma_values[1],
+  mixture_functions = relevant_mixture_functions,
+  initialisation_algorithms = c("rebmix"),
+  sigma_values = sigma_values[1:2],
   mean_values = list("high OVL"=matrix(c(20, 22, 22, 20), nrow = 2, ncol = 2)),
   proportions = list("balanced"=c(0.5, 0.5)),
-  Nbootstrap = 1, nobservations = c(500))
+  Nbootstrap = 2, nobservations = c(200))
 
 # saveRDS(test_parameters_distribution,
 #         file.path("/home/bncl_cb/rstudio/working/mixture_models/results", "multivariate_test_distribution.rds"))

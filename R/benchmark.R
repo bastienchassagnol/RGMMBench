@@ -64,7 +64,7 @@ benchmark_univariate_GMM_estimation <- function(mixture_functions,
                 ##################################################################
                 ##             estimation of the initial estimates             ##
                 ##################################################################
-                start <- initialize_em_univariate(
+                initial_estimates <- initialize_em_univariate(
                   x = simulated_distribution$x, k = k, nstart = nstart,
                   short_iter = short_iter, short_eps = short_eps, initialisation_algorithm = init_algo
                 )
@@ -86,7 +86,7 @@ benchmark_univariate_GMM_estimation <- function(mixture_functions,
                       missing_estimated_theta_list <- do.call(mixture_function, c(
                         x = list(simulated_distribution$x), k = simulated_distribution$k,
                         epsilon = epsilon, itmax = itmax,
-                        start = list(start), mixture_functions[[index]]$list_params
+                        start = list(initial_estimates), mixture_functions[[index]]$list_params
                       ))
                     },
                     error = function(e) {
@@ -188,37 +188,50 @@ benchmark_multivariate_GMM_estimation <- function(mixture_functions,
               ##################################################################
               ##             estimation of the initial estimates             ##
               ##################################################################
-              start <- initialize_em_multivariate(
+              good_initialisation <- TRUE
+              tryCatch({
+              initial_estimates <- initialize_em_multivariate(
                 x = simulated_distribution$x, k = k, nstart = nstart,
                 short_iter = short_iter, short_eps = short_eps, initialisation_algorithm = init_algo
+              )}, error = function(e) {
+                  good_initialisation <<- FALSE # use this operator, <<-, as in the other case, its value is not updated
+                  warning(paste("Error in the initialisation step occurs:", e,
+                                                              "with init algorithm: ", init_algo))
+                }
               )
+              if(!good_initialisation) {
+                dir.create("./errors/initialisation_failures", showWarnings = F, recursive = T)
+                saveRDS(object = list(simulated_distribution=simulated_distribution, algo=init_algo),
+                        file = glue::glue("./errors/initialisation_failures/init_algo_{init_algo}_step_{t}_{n}_observations.rds"))
+                next # we skip the estimation of any package in that scenario
+              }
               ##################################################################
               ##           estimation of GMMs with the EM algorithm           ##
               ##################################################################
               for (index in 1:length(mixture_functions)) {
                 # retrieve function values
                 mixture_function <- mixture_functions[[index]]$name_fonction; package_name <- names(mixture_functions)[index]
-                success_estimation <- TRUE # checking that the algorithm is not trapped in boundary space or simply failed
+                success_estimation <- TRUE; good_parametrisation <- FALSE # checking that the algorithm is not trapped in boundary space or simply failed
                 # message(glue::glue("Package is {package_name}, with following initialisation method {init_algo}."))
                 tryCatch(
                   {
                     missing_estimated_theta_list <- do.call(mixture_function, c(
                       x = list(simulated_distribution$x), k = simulated_distribution$k,
                       epsilon = epsilon, itmax = itmax,
-                      start = list(start), mixture_functions[[index]]$list_params
+                      start = list(initial_estimates), mixture_functions[[index]]$list_params
                     ))
+                    good_parametrisation <- check_parameters_validity_multivariate(missing_estimated_theta_list)
                   },
                   error = function(e) {
-                    success_estimation <- FALSE
-                    warning(paste("Error is:", e))
+                    success_estimation <- FALSE; warning(paste("Error in the EM estimation step is:", e))
                   }
                 )
-                if (!check_parameters_validity_multivariate(missing_estimated_theta_list, k = k) | !success_estimation) {
-                  dir.create("./errors", showWarnings = F, recursive = T)
-                  saveRDS(object = list(simulated_distribution=simulated_distribution, start=start),
-                          file = glue::glue("./errors/package_{package_name}_init_algo_{init_algo}.rds"))
+                if (!good_parametrisation | !success_estimation) {
+                  dir.create("./errors/estimation_failures", showWarnings = F, recursive = T)
+                  saveRDS(object = list(simulated_distribution=simulated_distribution, initial_estimates=initial_estimates, package=package_name),
+                          file = glue::glue("./errors/estimation_failures/package_{package_name}_init_algo_{init_algo}_step_{t}_{n}_observations.rds"))
                   warning(paste("Estimates trapped in the boundary space or failure of the package", package_name))
-                  next
+                  next # we skip the initialisation in that case
                 }
                 # normalize returned estimates
                 missing_estimated_theta <- missing_estimated_theta_list %>% format_theta_output()
@@ -238,7 +251,11 @@ benchmark_multivariate_GMM_estimation <- function(mixture_functions,
           #################################################################
           ##     summarize results obtained per scenario configuration   ##
           #################################################################
-          distribution_parameters <- distribution_parameters %>% dplyr::bind_rows(distribution_parameters_temp)
+
+          distribution_parameters <- distribution_parameters %>% dplyr::bind_rows(distribution_parameters_temp) %>%
+            dplyr::mutate(formatted_true_parameters=list(as.list(formatted_true_theta)), true_parameters=list(as.list(true_theta)),
+                          true_parameters_factor=paste0(paste0(bootstrap_colnames, ": ", formatted_true_theta, collapse = ";"),
+                                                        " Nobservations: ", n))
 
           # summary scores per parameter
           local_scores_temp <- distribution_parameters_temp %>%
@@ -247,9 +264,16 @@ benchmark_multivariate_GMM_estimation <- function(mixture_functions,
                                               formatted_true_theta)) %>%
             tibble::add_column(
               OVL = balanced_ovl, entropy = entropy_value,
-              OVL_pairwise = pairwise_ovl,  nobservations = n
-            )
+              formatted_true_parameters=list(as.list(formatted_true_theta)),
+              true_parameters_factor=paste0(paste0(bootstrap_colnames, ": ", formatted_true_theta, collapse = ";"),
+                                            " Nobservations: ", n),
+              OVL_pairwise = pairwise_ovl,  nobservations = n)
           local_scores <- local_scores %>% dplyr::bind_rows(local_scores_temp)
+          # generate file name
+          filename <- paste0("Nobservations_", n,
+                              paste(names(formatted_true_theta), formatted_true_theta, collapse = ": "), ".rds")
+          dir.create("./results", showWarnings = F, recursive = T)
+          saveRDS(list(distribution=distribution_parameters_temp, local_scores=local_scores_temp),file.path("./results", filename))
           message("One configuration of parameter has been fully completed.\n\n")
         } # number of observations
       }
@@ -332,7 +356,7 @@ compute_microbenchmark <- function(mixture_functions,
                   ##################################################################
                   ##        estimation of time taken for the initialisation       ##
                   ##################################################################
-                  start <- initialize_em_univariate(
+                  initial_estimates <- initialize_em_univariate(
                     x = simulated_distribution$x, k = k, nstart = nstart, prior_prob = prior_prob,
                     short_iter = short_iter, short_eps = short_eps, initialisation_algorithm = init_algo
                   )
@@ -360,7 +384,7 @@ compute_microbenchmark <- function(mixture_functions,
                     mbm_temp <- mbm_temp %>% dplyr::bind_rows(
                       microbenchmark::microbenchmark(package = do.call(mixture_function, c(
                         x = list(simulated_distribution$x), k = simulated_distribution$k,
-                        epsilon = epsilon, itmax = itmax, start = list(start), mixture_functions[[index]]$list_params
+                        epsilon = epsilon, itmax = itmax, initial_estimates = list(initial_estimates), mixture_functions[[index]]$list_params
                       )), times = 1) %>%
                         tibble::as_tibble() %>% dplyr::rename(package = expr) %>%
                         dplyr::mutate(

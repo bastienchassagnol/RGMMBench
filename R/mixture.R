@@ -198,7 +198,7 @@ initialize_em_univariate <- function(x = NULL, k = 2, nstart = 10L, short_iter =
 
     fit <- invisible(capture.output(rebmix::REBMIX(
       object = "REBMIX", Dataset = list(data.frame(x)), Preprocessing = "kernel density estimation",
-      Restraints = "loose", cmax = k, cmin = k, Criterion = "BIC", pdf = "normal", model = "REBMIX", EMcontrol = EM_control
+      Restraints = "loose", cmax = k + 1, cmin = k, Criterion = "BIC", pdf = "normal", model = "REBMIX", EMcontrol = EM_control
     )))
 
     estimated_theta <- list(p = unlist(fit@w), mu = unlist(fit@Theta[[1]])[seq(2, 3 * k, by = 3)], sigma = unlist(fit@Theta[[1]])[seq(3, 3 * k, by = 3)])
@@ -209,7 +209,7 @@ initialize_em_univariate <- function(x = NULL, k = 2, nstart = 10L, short_iter =
   return(ordered_estimated_theta)
 }
 
-
+#' @importClassesFrom rebmix EM.Control
 #' @rdname initialize_em_univariate
 initialize_em_multivariate <- function(x, k = 2, nstart = 10L, short_iter = 200, short_eps = 10^-2, prior_prob = 0.05,
                                        initialisation_algorithm = c("kmeans", "random", "hc", "small em", "rebmix"), ...) {
@@ -293,7 +293,7 @@ initialize_em_multivariate <- function(x, k = 2, nstart = 10L, short_iter = 200,
     # one step of EM is required, just for the computation of the estimated parameters
     suppressMessages(fit <- rebmix::REBMIX(
       model = "REBMVNORM", Dataset = list(data.frame(x)), Preprocessing = "kernel density estimation",
-      Restraints = "loose", cmax = k , cmin = k - 1, Criterion = "BIC", EMcontrol = EM_control))
+      Restraints = "loose", cmax = k + 1, cmin = k, Criterion = "BIC", EMcontrol = EM_control))
 
     mu <- matrix(fit@Theta[[1]][grep("^theta1\\.",names(fit@Theta[[1]]))] %>% unlist() %>% unname(),
                  nrow=dim_gaussian, ncol=k) # estimates are returned as an unique long vector
@@ -305,6 +305,10 @@ initialize_em_multivariate <- function(x, k = 2, nstart = 10L, short_iter = 200,
 
   ### return an unique ordered parameter configuration
   ordered_estimated_theta <- enforce_identifiability(estimated_theta)
+  # stop in case of bad implementation
+  stopifnot("Parameters learnt from the initiation algorithm are inconsistent with the number of clusters required,
+             likely to come from rebmix overestimating the number of clusters"=
+              check_parameters_validity_multivariate(ordered_estimated_theta)==TRUE)
   return(ordered_estimated_theta)
 }
 
@@ -338,6 +342,7 @@ initialize_em_multivariate <- function(x, k = 2, nstart = 10L, short_iter = 200,
 #' @return a list of the estimated parameters, ordered by increasing mean for identifiability issues
 #'
 #' @importFrom stats IQR dnorm median quantile runif sd var
+#'
 #'
 #' @seealso [emnmix_multivariate()]
 #'
@@ -427,7 +432,7 @@ emnmix_univariate <- function(x, k, itmax = 5000, epsilon = 10^-12, nstart = 10L
 #'
 #' @export
 emnmix_multivariate <- function(x, k, itmax = 5000, epsilon = 10^-12, nstart = 10L, start = NULL,
-                                initialisation_algorithm = "kmeans", method="ML", ...) {
+                                initialisation_algorithm = "kmeans", method="ML", verbose=F,...) {
 
   ### retrieve the initial configuration
   n <- nrow(x); dim_gaussian <- ncol(x)
@@ -463,8 +468,8 @@ emnmix_multivariate <- function(x, k, itmax = 5000, epsilon = 10^-12, nstart = 1
       sigma[,,j] <- stats::cov.wt(x, wt=eta[,j], cor=F, center=T,method=method)$cov # ML is the maximum likelihood estimator, not the unbiased one
     }
 
-
-    # print(paste("iter is", iter, "with p being", paste(p)))
+    if (verbose)
+      message(paste("iter is", iter, "with p being", paste(p, collapse = "; ")))
     # deal with underflow or removal of components
     if (!check_parameters_validity_multivariate(list(p = p, mu = mu, sigma = sigma), k = k)) {
       break
@@ -1007,7 +1012,7 @@ em_GMKMcharlie_multivariate <- function(x = x, k = 2, initialisation_algorithm =
                                         itmax = 5000, epsilon = 10^-12, start = NULL, parallel = FALSE, ...) {
   # initialization section
   if (is.null(start)) {
-    start <- initialize_em_univariate(
+    start <- initialize_em_multivariate(
       x = x, k = k, nstart = 10L, itmax = 200, epsilon = 10^-2,
       initialisation_algorithm = initialisation_algorithm, ...
     )
@@ -1244,12 +1249,12 @@ check_parameters_validity_multivariate <- function(theta, k = length(theta$p)) {
   }
 
   # check parametrisation of means
-  if (!all.equal(dim(mu),c(dimension_gaussian, k)) | any(c(mu) > machine_max)) {
+  if (!identical(dim(mu),c(dimension_gaussian, k)) | any(c(mu) > machine_max)) {
     warning("The mean parameter must be of dimension ndim * k, with k the number of clusters"); is_valid_parametrisation <- FALSE
   }
 
   # check the parametrisation of covariance
-  if (!all.equal(dim(sigma), c(dimension_gaussian, dimension_gaussian, k)) | any(c(sigma) > machine_max)) {
+  if (!identical(dim(sigma), c(dimension_gaussian, dimension_gaussian, k)) | any(c(sigma) > machine_max)) {
     warning("the covariance array stores for each component a variance matrix of fixed size k"); is_valid_parametrisation <- FALSE
   }
   else {
