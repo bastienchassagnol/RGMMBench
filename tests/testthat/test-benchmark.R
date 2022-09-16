@@ -1,3 +1,4 @@
+RNGkind("L'Ecuyer-CMRG")
 set.seed(20)
 
 relevant_mixture_functions <- list(
@@ -22,13 +23,14 @@ for (corr_1 in corr_sequence) {
 }
 
 # simulated_distribution <- readRDS("./errors/package_em R_init_algo_rebmix.rds")$simulated_distribution
-test_parameters_distribution <- benchmark_multivariate_GMM_estimation(
+
+test_parameters_distribution <- benchmark_multivariate_GMM_estimation_parallel(
   mixture_functions = relevant_mixture_functions,
-  initialisation_algorithms = c("rebmix"),
-  sigma_values = sigma_values[1:2],
-  mean_values = list("high OVL"=matrix(c(20, 22, 22, 20), nrow = 2, ncol = 2)),
+  initialisation_algorithms = c("kmeans", "hc"),
+  sigma_values = sigma_values[1],
+  mean_values = list("high OVL"=matrix(c(0, 2, 2, 0), nrow = 2, ncol = 2)),
   proportions = list("balanced"=c(0.5, 0.5)),
-  Nbootstrap = 2, nobservations = c(200))
+  Nbootstrap = 10, nobservations = c(100))
 
 # saveRDS(test_parameters_distribution,
 #         file.path("/home/bncl_cb/rstudio/working/mixture_models/results", "multivariate_test_distribution.rds"))

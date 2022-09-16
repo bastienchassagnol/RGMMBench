@@ -34,4 +34,7 @@ po/*~
 ### R.Bookdown Stack ###
 # R package: bookdown caching files
 /*_files/
+# additional files
+results/
+errors/
 # End of https://www.toptal.com/developers/gitignore/api/r

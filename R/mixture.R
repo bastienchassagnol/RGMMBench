@@ -176,7 +176,7 @@ initialize_em_univariate <- function(x = NULL, k = 2, nstart = 10L, short_iter =
       # take some random points using EMCluster simple method
       start <- EMCluster::simple.init(as.matrix(x), nclass = k)
       # small runs of EM from mixtools package, as implementing the true EM algorithm
-      fit <- em_Rmixmod_univariate(
+      fit <- em_mixtools_univariate(
         x = x,
         start = list(p = start$pi, mu = as.vector(start$Mu), sigma = sqrt(as.vector(start$LTSigma))),
         short_eps = short_eps, short_iter = short_iter, k = k
@@ -211,6 +211,7 @@ initialize_em_univariate <- function(x = NULL, k = 2, nstart = 10L, short_iter =
 
 #' @importClassesFrom rebmix EM.Control
 #' @rdname initialize_em_univariate
+#' @export
 initialize_em_multivariate <- function(x, k = 2, nstart = 10L, short_iter = 200, short_eps = 10^-2, prior_prob = 0.05,
                                        initialisation_algorithm = c("kmeans", "random", "hc", "small em", "rebmix"), ...) {
 
@@ -270,7 +271,7 @@ initialize_em_multivariate <- function(x, k = 2, nstart = 10L, short_iter = 200,
       # take some random points using EMCluster simple method
       start <- EMCluster::simple.init(as.matrix(x), nclass = k)
       # small runs of EM from mixtools package, as implementing the true EM algorithm
-      fit <- em_Rmixmod_multivariate(
+      fit <- em_mixtools_multivariate(
         x = x,
         start = list(p = start$pi, mu = t(start$Mu), sigma = trig_mat_to_array(start$LTSigma)),
         short_eps = short_eps, short_iter = short_iter, k = k
@@ -306,9 +307,18 @@ initialize_em_multivariate <- function(x, k = 2, nstart = 10L, short_iter = 200,
   ### return an unique ordered parameter configuration
   ordered_estimated_theta <- enforce_identifiability(estimated_theta)
   # stop in case of bad implementation
-  stopifnot("Parameters learnt from the initiation algorithm are inconsistent with the number of clusters required,
-             likely to come from rebmix overestimating the number of clusters"=
-              check_parameters_validity_multivariate(ordered_estimated_theta)==TRUE)
+  if (!check_parameters_validity_multivariate(ordered_estimated_theta)) {
+    dir.create("./errors/initialisation_failures", showWarnings = F, recursive = T)
+    if(!exists("init_error_count", where = globalenv()))
+      assign("init_error_count", 1, pos=globalenv())
+    else {
+      assign("init_error_count", get("init_error_count", pos=globalenv()) + 1, pos=globalenv()) # set a counter for each error
+    }
+    saveRDS(object = list(x=x, algo=initialisation_algorithm),
+            file = glue::glue("./errors/initialisation_failures/init_algo_{initialisation_algorithm}_error_{init_error_count}.rds"))
+    stop("Parameters learnt from the initiation algorithm are inconsistent with the number of clusters required,
+             likely to come from rebmix overestimating the number of clusters")
+  }
   return(ordered_estimated_theta)
 }
 

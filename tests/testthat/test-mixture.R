@@ -96,9 +96,11 @@ test_that("GMM estimation in unsupervised case", {
 })
 
 test_that("specific focus on my own developped function", {
-  start <- readRDS("./errors/package_GMKMcharlie_init_algo_hc_step_1_200_observations.rds.rds")$initial_estimates
-  multivariate_simulation <- readRDS("./errors/package_GMKMcharlie_init_algo_hc_step_1_200_observations.rds.rds")$simulated_distribution
 
+  distribution <- readRDS("/home/bncl_cb/rstudio/working/mixture_models/multivariate_GMM_parameter_estimate_long_2022-09-13_17-47-41/job_1/errors/initialisation_failures/init_algo_rebmix_step_1_500_observations.rds")
+
+  initial_rebmix_estimates <- initialize_em_multivariate (x = distribution$simulated_distribution$x,
+                                                   k = 2,initialisation_algorithm = "rebmix")
 
   GMKMcharlie_multi_estimates <- em_GMKMcharlie_multivariate (x = multivariate_simulation$x, k = 2,
                                                               itmax = 1, start = start, parallel = F)
