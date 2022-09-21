@@ -24,36 +24,29 @@ for (corr_1 in corr_sequence) {
 
 # simulated_distribution <- readRDS("./errors/package_em R_init_algo_rebmix.rds")$simulated_distribution
 
-test_parameters_distribution <- benchmark_multivariate_GMM_estimation_parallel(
-  mixture_functions = relevant_mixture_functions,
-  initialisation_algorithms = c("kmeans", "hc"),
+test_parameters_distribution <- benchmark_multivariate_GMM_estimation(
+  mixture_functions = relevant_mixture_functions[1],
+  initialisation_algorithms = c("small em"),
   sigma_values = sigma_values[1],
   mean_values = list("high OVL"=matrix(c(0, 2, 2, 0), nrow = 2, ncol = 2)),
-  proportions = list("balanced"=c(0.5, 0.5)),
-  Nbootstrap = 10, nobservations = c(100))
+  proportions = list("unbalanced"=c(0.9, 0.1)),
+  Nbootstrap = 100, nobservations = c(100))
 
 # saveRDS(test_parameters_distribution,
 #         file.path("/home/bncl_cb/rstudio/working/mixture_models/results", "multivariate_test_distribution.rds"))
 
-multi_parameters_distribution <- benchmark_multivariate_GMM_estimation(
-  mixture_functions = relevant_mixture_functions,
-  initialisation_algorithms = c("kmeans", "random", "hc", "small em", "rebmix"),
-  sigma_values = sigma_values,
-  mean_values = list("small OVL"=matrix(c(20, 40, 40, 20), nrow = 2, ncol = 2)),
-  # mean_values = list("high OVL"=matrix(c(20, 22, 22, 20), nrow = 2, ncol = 2),
-  #                    "small OVL"=matrix(c(20, 40, 40, 20), nrow = 2, ncol = 2)),
-  proportions = list("balanced" = c(0.5, 0.5)),
-  Nbootstrap = 100, nobservations = c(1000))
 
 
 
-
-#
-# capture.output(running_times <- compute_microbenchmark(
-#   mixture_functions = relevant_mixture_functions, sigma_values = list("null OVL" = rep(0.3, 4)),
-#   mean_values = list(c(0, 4)), proportions = list("balanced" = c(0.5, 0.5)), prop_outliers = c(0),
-#   Nbootstrap = 2, nobservations = c(50, 100), initialisation_algorithms = c("quantiles")
-# )) %>% invisible()
+RNGkind("L'Ecuyer-CMRG"); set.seed(20)
+simulated_distribution <- readRDS("./errors/initialisation_failures/init_algo_rebmix_step_100_500_observations.rds")$simulated_distribution
+running_times_multivariate <- compute_microbenchmark_multivariate(
+  mixture_functions = relevant_mixture_functions[1:2],
+  initialisation_algorithms = c("kmeans", "hc", "random"),
+  sigma_values = sigma_values[1],
+  mean_values = list("high OVL"=matrix(c(0, 2, 2, 0), nrow = 2, ncol = 2)),
+  proportions = list("unbalanced"=c(0.9, 0.1)),
+  Nbootstrap = 4, nobservations = c(50, 100))
 
 
 #

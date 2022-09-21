@@ -285,6 +285,7 @@ test_function <- function(x, w) {
 #' * The 3-dimensional covariance matrix array `Sigma`: \eqn{\mathrm{\Sigma}=(\Sigma_{i,j,l}) \in \mathbb{R}^{n \times n \times k}},
 #'  with each matrix \eqn{\Sigma_{..l}, l \in \{ 1, \ldots, k\}} storing the covariance matrix of a given component,
 #' whose diagonal terms correspond to the variance of each variable, and off-terms diagonal elements return the covariance matrix
+#' @export
 
 
 format_theta_output <- function(theta) {

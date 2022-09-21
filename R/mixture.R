@@ -462,10 +462,16 @@ emnmix_multivariate <- function(x, k, itmax = 5000, epsilon = 10^-12, nstart = 1
     expection_results <- predict_posterior_probability(x, list(p = p, mu = mu, sigma = sigma))
     eta <- expection_results$eta; new_loglik <- expection_results$loglik
 
+    if (verbose)
+      message(paste("iter is", iter, "with eta being", paste(head(eta), collapse = "; ")))
+
     ### M-step ###
 
     # update component's weights (similar formula, no matter the model)
-    S0 <- apply(eta, 2, sum); p <- S0 / n
+    S0 <- apply(eta, 2, sum)
+    if(any(S0 <.Machine$double.eps))
+      stop(glue::glue("Component {which(S0 <.Machine$double.eps)} has been removed."))
+    p <- S0 / n
     # S1 <- apply(eta * x, 2, sum)
     # S2 <- apply(eta * x^2, 2, sum)
     # mu <- S1 / S0
@@ -473,13 +479,15 @@ emnmix_multivariate <- function(x, k, itmax = 5000, epsilon = 10^-12, nstart = 1
 
     # update parameter vector theta
     mu <- matrix(0, nrow=dim_gaussian, ncol=k); sigma <- array(0, dim=c(dim_gaussian, dim_gaussian, k))
+
     for (j in 1:k) {
       mu[,j] <- apply(x, 2, stats::weighted.mean, eta[,j])
       sigma[,,j] <- stats::cov.wt(x, wt=eta[,j], cor=F, center=T,method=method)$cov # ML is the maximum likelihood estimator, not the unbiased one
     }
 
     if (verbose)
-      message(paste("iter is", iter, "with p being", paste(p, collapse = "; ")))
+      message(paste("iter is", iter, "with p being", paste(p, collapse = "; "), "and mu being", paste(mu, collapse = "; "),
+                    "and sigma being", paste(sigma, collapse = "; ")))
     # deal with underflow or removal of components
     if (!check_parameters_validity_multivariate(list(p = p, mu = mu, sigma = sigma), k = k)) {
       break
@@ -1186,9 +1194,6 @@ predict_posterior_probability <- function(x, estimated_theta) {
     # multivariate scenario
     for (j in 1:k) {
       eta[, j] <- log(p[j]) + mvtnorm::dmvnorm(x, mean = mu[,j], sigma = sigma[,,j], log = TRUE)
-
-      # EMCluster::dlmvn(x[2,], mu=mu[,j], LTsigma = sigma[,,j][lower.tri(sigma[,,j], diag = TRUE)])
-      # does not generalize to a set
     }
   }
   else {
@@ -1254,7 +1259,7 @@ check_parameters_validity_multivariate <- function(theta, k = length(theta$p)) {
   }
 
   # check the parametrisation of proportions (sum-to-one constraint)
-  if (abs(sum(p) - 1) > 10^-6 | any(p<machine_limit) | any(p>1 - machine_limit)) {
+  if ((1- sum(p)) > machine_limit | any(p<machine_limit) | any(p>1- machine_limit)) {
     warning("One at least of your proportions does not enforce the sum-to-one constraint"); is_valid_parametrisation <- FALSE
   }
 

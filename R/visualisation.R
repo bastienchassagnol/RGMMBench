@@ -6,7 +6,7 @@
 #' @param p,mu,sigma the true values of the parameters
 #' @param with_outliers boolean: remove or not outlying estimates
 #'
-#' @return boxplot_parameters a ggplot object representing the boxplot distributions of the estimates per package and initialisation algorithm
+#' @return boxplot_parameters a ggplot object representing the boxplot distributions of the estimates per package and initialisation package
 #'
 #' @export
 
@@ -68,7 +68,7 @@ plot_boxplots_parameters <- function(distribution_parameters, p, mu, sigma,
 #'
 #' @param init_time_data the running time data
 #'
-#' @return initialisation_time_plots a ggplot object representing the running time curve distributions of the initialisation algorithms
+#' @return initialisation_time_plots a ggplot object representing the running time curve distributions of the initialisation packages
 #'
 #' @export
 
@@ -224,8 +224,8 @@ plot_univariate_normal_density_distribution <- function(sigma_values, mean_value
 
 #' Plot Correlation Heatmap
 #'
-#' For each configuration of parameter, compare the similarity between the algorithms
-#' for each initialisation algorithm, by computing the correlation between
+#' For each configuration of parameter, compare the similarity between the packages
+#' for each initialisation package, by computing the correlation between
 #' their estimates
 #'
 #' @param distribution_parameters A tibble with the distribution of the parameters,
@@ -234,19 +234,19 @@ plot_univariate_normal_density_distribution <- function(sigma_values, mean_value
 #' @export
 
 plot_correlation_Heatmap <- function(distribution_parameters) {
-  distribution_parameters <- distribution_parameters %>% dplyr::group_by(OVL, entropy, algorithm, name_parameter, initialisation_method) %>%
-    mutate(index=dplyr::row_number()) %>% dplyr::ungroup() # add an index, ti uniquely identify each experiment
+  distribution_parameters <- distribution_parameters %>% dplyr::group_by(OVL, entropy, package, name_parameter, initialisation_method) %>%
+    mutate(index=dplyr::row_number()) %>% dplyr::ungroup() # add an index, that uniquely identify each experiment
 
 
   # compute correlation matrix
   total_correlation_scores_global <- lapply(split(distribution_parameters, distribution_parameters$initialisation_method),
                                             function(x) {
-                                              cor_data <- tidyr::pivot_wider(x, names_from = c("algorithm"), values_from="value_parameter") %>%
-                                                dplyr::select(unique(x %>% dplyr::pull(algorithm))) %>% stats::cor(use="complete.obs")
+                                              cor_data <- tidyr::pivot_wider(x, names_from = c("package"), values_from="value_parameter") %>%
+                                                dplyr::select(unique(x %>% dplyr::pull(package))) %>% stats::cor(use="complete.obs")
                                               return(cor_data)
                                             })
 
-  # generate associated Heatmap, for each initialisation algorithm
+  # generate associated Heatmap, for each initialisation package
   total_correlation_scores_plots <- Map(function(cor_matrix, init_method) {
     complex_heatmap <- ComplexHeatmap::Heatmap(cor_matrix, name = "mat", heatmap_legend_param = list(title = ""),
                                                cluster_rows = TRUE, row_names_gp = grid::gpar(fontsize = 8), row_labels = colnames(cor_matrix),
