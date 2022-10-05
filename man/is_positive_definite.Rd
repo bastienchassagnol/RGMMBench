@@ -4,10 +4,10 @@
 \alias{is_positive_definite}
 \title{Check the positive definiteness of a symmetric real matrix}
 \usage{
-is_positive_definite(cov_matrix, tol = 1e-06)
+is_positive_definite(sigma, tol = 1e-06)
 }
 \arguments{
-\item{cov_matrix}{a symmetric matrix with real values}
+\item{sigma}{a symmetric matrix with real values}
 
 \item{tol}{the numerical maximal tolerance threshold,
 to which an eigen value below it is considered negative}

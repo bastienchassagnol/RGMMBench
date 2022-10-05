@@ -2,6 +2,7 @@
 % Please edit documentation in R/visualisation.R
 \name{plot_univariate_normal_density_distribution}
 \alias{plot_univariate_normal_density_distribution}
+\alias{plot_bivariate_normal_density_distribution}
 \title{Plot the true density distributions, in the univariate context}
 \usage{
 plot_univariate_normal_density_distribution(
@@ -9,6 +10,8 @@ plot_univariate_normal_density_distribution(
   mean_values,
   proportions
 )
+
+plot_bivariate_normal_density_distribution(theta, n = 5000)
 }
 \arguments{
 \item{proportions, mean_values, sigma_values}{parameters of the several components represented,

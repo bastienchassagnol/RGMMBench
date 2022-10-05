@@ -25,6 +25,35 @@ compute_overlap_roots <- function(p1, p2, mu1, mu2, sigma1, sigma2) {
   }
 }
 
+#' Compute a set of points, in order to draw 95% confidence intervals
+#'
+#' @author Bastien CHASSAGNOL
+#'
+#' @param theta the list of the estimates returned by the EM algorithm
+#' @param alpha the confidence interval
+#' @param npoints the number of points used to generate the ellipes
+#' @return a tibble with `n` points associated to x and y locations associated to the `1-alpha` confidence interval
+
+
+generate_ellipse <- function (theta, alpha = 0.05, npoints = 500) {
+
+# control input
+mu <- theta$mu %>% as.vector(); sigma <- theta$sigma
+if(!is.matrix(sigma))
+  sigma <- sigma[,,1]
+
+
+es <- eigen(sigma)
+e1 <- es$vec %*% diag(sqrt(es$val))
+r1 <- sqrt(qchisq(1 - alpha, 2))
+theta <- seq(0, 2 * pi, len = npoints)
+v1 <- cbind(r1 * cos(theta), r1 * sin(theta))
+pts <- t(mu - (e1 %*% t(v1))) %>% tibble::as_tibble()
+colnames(pts) <- c("x", "y")
+return(pts)
+}
+
+
 
 #' Compute bias and mse for each parameter of a GMM distribution
 #'
@@ -46,6 +75,13 @@ get_local_scores <- function(estimated_theta, true_theta) {
     scores = c("mean", "sd", "bias", "mse"),
     dplyr::bind_rows(mean_parameter, empiric_sds, bias, mse)
   ))
+}
+
+#' The Maha distance
+maha <- function(mu, sigma) {
+  inv.sigma <- solve(sigma)
+  d <- t(mu) %*% inv.sigma %*% mu
+  return(as.vector(d))
 }
 
 #' Compute the shannon entropy of a discrete distribution, normalised from 0 to 1 (equibalanced classes)
@@ -78,7 +114,7 @@ compute_shannon_entropy <- function(ratios) {
 #'and if all of them are positive above a given threshold, then we return true.
 #' @author Bastien CHASSAGNOL
 #'
-#' @param cov_matrix a symmetric matrix with real values
+#' @param sigma a symmetric matrix with real values
 #' @param tol the numerical maximal tolerance threshold,
 #' to which an eigen value below it is considered negative
 #'
@@ -87,8 +123,8 @@ compute_shannon_entropy <- function(ratios) {
 #' @export
 #'
 
-is_positive_definite <- function(cov_matrix, tol=1e-6) {
-  eigen_values <- eigen(cov_matrix, symmetric = TRUE)$values
+is_positive_definite <- function(sigma, tol=1e-6) {
+  eigen_values <- eigen(sigma, symmetric = TRUE)$values
   return(all(eigen_values >= -tol))
 }
 
@@ -178,13 +214,13 @@ trig_mat_to_array <- function(x, transposed=TRUE, ...) {
   k <- nrow(x); dim_gaussian <- (sqrt(8 * ncol(x) + 1) - 1)/2
   stopifnot("Dimension of the input must be a Pascal number (to have a triangular valid matrix)" =
               is_integer(dim_gaussian))
-  cov_matrix <- array(0, dim=c(dim_gaussian, dim_gaussian, k))
+  sigma <- array(0, dim=c(dim_gaussian, dim_gaussian, k))
 
   for (j in 1:k) {
-      cov_matrix[,,j] <- vec2sym(x[j,], ...)
+      sigma[,,j] <- vec2sym(x[j,], ...)
   }
 
-  return(cov_matrix)
+  return(sigma)
 }
 
 #' Convert an array of covariance matrices to short lower triangular format
@@ -309,6 +345,44 @@ format_theta_output <- function(theta) {
   return(c(formatted_p, formatted_mu, formatted_sigma))
 }
 
+#' @rdname format_theta_output
+unformat_theta_output <- function(formatted_theta) {
+names_theta <- names(formatted_theta); theta <- list()
+k <- stringr::str_detect(names_theta, "^p[[:digit:]]+$") %>% sum()
+dim_gaussian <- stringr::str_detect(names_theta, "mu") %>% sum() / k
+# deal with proportions
+theta$p <- formatted_theta[stringr::str_detect(names_theta, "^p[[:digit:]]+$")] %>% unlist() %>% unname()
+
+# deal with mean vector
+theta$mu <- matrix(formatted_theta[stringr::str_detect(names_theta, "mu")] %>% unlist(), nrow=dim_gaussian, ncol=k)
+
+# deal with sigma
+theta$sigma <- matrix(formatted_theta[stringr::str_detect(names_theta, "sd")] %>% unlist(), nrow=k, byrow = T) %>% trig_mat_to_array()
+return(theta)
+}
+
+
+
+#' Compute the Hellinger distance
+#'
+#' @return the Hellinger distance between two multivariate Gaussian distributions
+hellinger <- function (mu1, Sigma1, mu2, Sigma2) {
+  p <- length(mu1);   d <- mu1 - mu2
+  vars <- (Sigma1 + Sigma2)/2
+  # in univariate dimension
+  if (p == 1) {
+    d <- sqrt(Sigma1 * Sigma2/ vars) *
+      exp((-1/4) * d^2/(2*vars))
+    return(sqrt(1 - d))
+  }
+  # in multivariate dimension
+  else {
+    hell_dist <- det(Sigma1)^(1/4) * det(Sigma2)^(1/4) / det(vars)^(1/2) *
+      exp((-1/8) * maha(d, vars))
+    return(sqrt(1 - hell_dist) %>% as.numeric())
+  }
+}
+
 
 
 
@@ -382,3 +456,8 @@ format_theta_output <- function(theta) {
 #'   ordered_estimated_theta <- ordered_estimated_theta %>% purrr::map(unname)
 #'   return(ordered_estimated_theta)
 #' }
+
+
+
+
+

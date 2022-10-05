@@ -4,7 +4,6 @@
 \alias{benchmark_univariate_GMM_estimation}
 \alias{benchmark_multivariate_GMM_estimation}
 \alias{benchmark_multivariate_GMM_estimation_parallel}
-\alias{benchmark_multivariate_GMM_estimation_with_socket}
 \title{Launch the benchmark to compare statistical performances between packages}
 \usage{
 benchmark_univariate_GMM_estimation(
@@ -41,23 +40,6 @@ benchmark_multivariate_GMM_estimation(
 )
 
 benchmark_multivariate_GMM_estimation_parallel(
-  mixture_functions,
-  mean_values,
-  proportions,
-  sigma_values,
-  cores = getOption("mc.cores", parallel::detectCores()),
-  nobservations = c(2000),
-  Nbootstrap = 100,
-  epsilon = 10^-6,
-  itmax = 1000,
-  nstart = 10L,
-  short_iter = 200,
-  short_eps = 10^-2,
-  prior_prob = 0.05,
-  initialisation_algorithms = c("kmeans", "random", "hc", "rebmix")
-)
-
-benchmark_multivariate_GMM_estimation_with_socket(
   mixture_functions,
   mean_values,
   proportions,

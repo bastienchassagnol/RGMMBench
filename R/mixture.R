@@ -62,6 +62,7 @@ simulate_univariate_GMM <- function(theta = list(p = c(0.40, 0.60), mu = c(175, 
 #' @export
 
 
+
 simulate_multivariate_GMM <- function(theta, n=500) {
   ##################################################################
   ##                        check validity                        ##

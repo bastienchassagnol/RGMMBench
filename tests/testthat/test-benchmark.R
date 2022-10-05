@@ -1,5 +1,4 @@
-RNGkind("L'Ecuyer-CMRG")
-set.seed(20)
+
 
 relevant_mixture_functions <- list(
   "em R" = list(name_fonction = emnmix_multivariate, list_params = list()),
@@ -21,32 +20,50 @@ for (corr_1 in corr_sequence) {
       array(c(1, corr_1, corr_1, 1, 1, corr_2, corr_2, 1), dim = c(2, 2, 2))
   }
 }
-
-# simulated_distribution <- readRDS("./errors/package_em R_init_algo_rebmix.rds")$simulated_distribution
-
-test_parameters_distribution <- benchmark_multivariate_GMM_estimation(
-  mixture_functions = relevant_mixture_functions[1],
-  initialisation_algorithms = c("small em"),
-  sigma_values = sigma_values[1],
-  mean_values = list("high OVL"=matrix(c(0, 2, 2, 0), nrow = 2, ncol = 2)),
-  proportions = list("unbalanced"=c(0.9, 0.1)),
-  Nbootstrap = 100, nobservations = c(100))
+# simulated_distribution <- readRDS("./errors/initialisation_failures/init_algo_rebmix_error_1.rds")
+# simulated_distribution <- readRDS("./errors/estimation_failures/package_em R_init_algo_kmeans_step_16_100_observations.rds")$simulated_distribution
+# initial_estimates <- readRDS("./errors/estimation_failures/package_em R_init_algo_kmeans_step_16_100_observations.rds")$initial_estimates
+# RNGkind("L'Ecuyer-CMRG")
+# set.seed(20)
+# test_parameters_distribution <- benchmark_multivariate_GMM_estimation(
+#   mixture_functions = relevant_mixture_functions[1],
+#   initialisation_algorithms = c("kmeans"),
+#   sigma_values = sigma_values[1:2],
+#   mean_values = list("small OVL"=matrix(c(0, 20, 20, 0), nrow = 2, ncol = 2)),
+#   proportions = list("balanced"=c(0.5, 0.5), "unbalanced"=c(0.9, 0.1)),
+#   Nbootstrap = 6, nobservations = c(200))
 
 # saveRDS(test_parameters_distribution,
 #         file.path("/home/bncl_cb/rstudio/working/mixture_models/results", "multivariate_test_distribution.rds"))
 
 
+sigma_values_relevant <- list()
+for (corr_1 in c(-0.8, 0.8)) {
+  for (corr_2 in c(-0.8, 0.8)) {
+    sigma_values_relevant[[glue::glue("comp_1_corr_{corr_1}_comp_2_{corr_2}")]] <-
+      array(c(1, corr_1, corr_1, 1, 1, corr_2, corr_2, 1), dim = c(2, 2, 2))
+  }
+}
+sigma_values_relevant[["well-separated"]] <- array(rep(c(1, 0, 0, 1), 2), dim = c(2, 2, 2))
+time_computation <- RGMMBench::compute_microbenchmark_multivariate(mixture_functions = relevant_mixture_functions[1:2],
+                                                                   initialisation_algorithms = c("kmeans"),
+                                                                   sigma_values = sigma_values_relevant[1:2],
+                                                                   mean_values = list("high OVL"=matrix(c(0, 2, 2, 0), nrow = 2, ncol = 2)),
+                                                                   proportions = list("unbalanced"=c(0.9, 0.1)),
+                                                                   Nbootstrap = 100, nobservations = c(100, 200))
 
 
-RNGkind("L'Ecuyer-CMRG"); set.seed(20)
-simulated_distribution <- readRDS("./errors/initialisation_failures/init_algo_rebmix_step_100_500_observations.rds")$simulated_distribution
-running_times_multivariate <- compute_microbenchmark_multivariate(
-  mixture_functions = relevant_mixture_functions[1:2],
-  initialisation_algorithms = c("kmeans", "hc", "random"),
-  sigma_values = sigma_values[1],
-  mean_values = list("high OVL"=matrix(c(0, 2, 2, 0), nrow = 2, ncol = 2)),
-  proportions = list("unbalanced"=c(0.9, 0.1)),
-  Nbootstrap = 4, nobservations = c(50, 100))
+
+
+# RNGkind("L'Ecuyer-CMRG"); set.seed(20)
+# simulated_distribution <- readRDS("./errors/initialisation_failures/init_algo_rebmix_step_100_500_observations.rds")$simulated_distribution
+# running_times_multivariate <- compute_microbenchmark_multivariate(
+#   mixture_functions = relevant_mixture_functions[1:2],
+#   initialisation_algorithms = c("kmeans", "hc", "random"),
+#   sigma_values = sigma_values[1],
+#   mean_values = list("high OVL"=matrix(c(0, 2, 2, 0), nrow = 2, ncol = 2)),
+#   proportions = list("unbalanced"=c(0.9, 0.1)),
+#   Nbootstrap = 4, nobservations = c(50, 100))
 
 
 #

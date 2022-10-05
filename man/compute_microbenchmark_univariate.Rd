@@ -27,6 +27,7 @@ compute_microbenchmark_multivariate(
   sigma_values,
   mean_values,
   proportions,
+  cores = getOption("mc.cores", parallel::detectCores()),
   nobservations = c(50, 100, 200, 500, 1000, 2000, 5000, 10000),
   Nbootstrap = 100,
   epsilon = 10^-6,

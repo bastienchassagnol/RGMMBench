@@ -10,7 +10,7 @@ plot_initialisation_time_computations(init_time_data)
 \item{init_time_data}{the running time data}
 }
 \value{
-initialisation_time_plots a ggplot object representing the running time curve distributions of the initialisation algorithms
+initialisation_time_plots a ggplot object representing the running time curve distributions of the initialisation packages
 }
 \description{
 Plot the running time of the initialisation methods

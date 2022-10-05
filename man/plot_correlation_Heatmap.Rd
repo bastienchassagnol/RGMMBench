@@ -11,7 +11,7 @@ plot_correlation_Heatmap(distribution_parameters)
 in the long format}
 }
 \description{
-For each configuration of parameter, compare the similarity between the algorithms
-for each initialisation algorithm, by computing the correlation between
+For each configuration of parameter, compare the similarity between the packages
+for each initialisation package, by computing the correlation between
 their estimates
 }
