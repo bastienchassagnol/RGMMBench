@@ -942,61 +942,6 @@ em_mclust_multivariate <- function(x = x, k = 2, initialisation_algorithm = "hc"
 
 #' @rdname emnmix_univariate
 #' @export
-em_DCEM_univariate <- function(x = x, k = 2, initialisation_algorithm = "hc",
-                               itmax = 5000, epsilon = 10^-12, start = NULL, ...) {
-  # initialization section
-  if (is.null(start)) {
-    start <- initialize_em_univariate(
-      x = x, k = k, nstart = 10L, itmax = 200, epsilon = 10^-2,
-      initialisation_algorithm = initialisation_algorithm, ...
-    )
-  }
-
-  fit <- DCEM:::dcem_cluster_uv(as.matrix(x),
-                                meu = start$mu, sigma = start$sigma, prior = start$p,
-                                num_clusters = k, iteration_count = itmax, threshold = epsilon, num_data = length(x), numcols = 1
-  )
-
-  # return an ordered list by mean values
-  fit <- list(p = fit$prior,
-              mu = fit$meu,
-              sigma = fit$sigma)
-
-  ### return an unique ordered parameter configuration
-  ordered_estimated_theta <- enforce_identifiability(fit)
-  return(ordered_estimated_theta)
-}
-
-#' @rdname emnmix_multivariate
-#' @export
-em_DCEM_multivariate <- function(x = x, k = 2, initialisation_algorithm = "hc",
-                                 itmax = 5000, epsilon = 10^-12, start = NULL, ...) {
-  # initialization section
-  if (is.null(start)) {
-    start <- initialize_em_multivariate(
-      x = x, k = k, nstart = 10L, itmax = 200, epsilon = 10^-2,
-      initialisation_algorithm = initialisation_algorithm, ...
-    )
-  }
-
-  invisible(capture.output(fit <-  DCEM:::dcem_cluster_mv(x, meu = t(start$mu), prior = start$p,
-                                                          sigma = lapply(seq(dim(start$sigma)[3]), function(x) start$sigma[ , , x]),
-                                                          num_clusters = k, iteration_count = itmax, threshold = epsilon, num_data = nrow(x))))
-
-  # return an ordered list by mean values
-  fit <- list(p = fit$prior,
-              mu = t(fit$meu),
-              sigma = fit$sigma %>% simplify2array())
-
-  ### return an unique ordered parameter configuration
-  ordered_estimated_theta <- enforce_identifiability(fit)
-  return(ordered_estimated_theta)
-}
-
-
-
-#' @rdname emnmix_univariate
-#' @export
 em_GMKMcharlie_univariate <- function(x = x, k = 2, initialisation_algorithm = "hc", embedNoise = 1e-6,
                                       itmax = 5000, epsilon = 10^-12, start = NULL, parallel = FALSE, ...) {
   # initialization section

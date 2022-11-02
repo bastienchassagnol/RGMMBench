@@ -326,6 +326,10 @@ test_function <- function(x, w) {
 
 format_theta_output <- function(theta) {
   mu <- theta$mu; sigma <- theta$sigma; p <- theta$p
+  if(!is.matrix(mu)) { # univariate setting
+    return(unlist(theta))
+  }
+  else { # multivariate setting
   dim_gaussian <- nrow(mu); k <- length(p)
 
   formatted_p <- stats::setNames(p, nm=paste0("p", 1:k))
@@ -343,6 +347,7 @@ format_theta_output <- function(theta) {
   }
   formatted_sigma <- stats::setNames(sigma %>% array_to_trig_mat(transposed = F) %>% as.vector(), names_sigma)
   return(c(formatted_p, formatted_mu, formatted_sigma))
+  }
 }
 
 #' @rdname format_theta_output
