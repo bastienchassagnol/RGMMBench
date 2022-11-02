@@ -1,27 +1,77 @@
 # grep -rl 'benchmark_distribution_parameters' *.R | xargs -i@ sed -i 's/benchmark_distribution_parameters/benchmark_univariate_GMM_estimation/g' @
 dir.create("./errors", showWarnings = F, recursive = T)
-test_that("simulation of univariate or multivariate GMM", {
+test_that("simulation of univariate GMM", {
   set.seed(20)
   # define parameters of a two component multivariate GMM
-  true_theta <- list(p=c(0.2, 0.8),
-                     mu=matrix(c(20, 22, 22, 20), nrow = 2),
-                     sigma=array(c(1, 0.2, 0.2, 1, 1, -0.2, -0.2, 1), dim=c(2, 2, 2)))
+  true_theta <- list(p=c(0.5, 0.5), mu=c(0, 2), sigma=c(1, 1))
+  expect_true(check_parameters_validity_univariate(true_theta, k=2))
 
-  expect_true(check_parameters_validity_multivariate(true_theta, k=2))
+  univariate_simulation <- simulate_univariate_GMM (theta=true_theta, n=100)
 
-  multivariate_simulation <- simulate_multivariate_GMM (theta=true_theta, n=100)
+  observed_estimates <- estimate_supervised_univariate_GMM(x=univariate_simulation$x,
+                                                           s = univariate_simulation$s)
 
-  expect_equal(multivariate_simulation,
-                   readRDS(test_path("fixtures", "two_component_multivariate_GMM.rds")))
+  #################################################################
+  ##          test initialisation in univariate context          ##
+  #################################################################
+  initial_estimates_hc <- initialize_em_univariate(x=univariate_simulation$x,k=2,
+                                                   initialisation_algorithm = "hc")
+
+  initial_estimates_kmeans <- initialize_em_univariate(x=univariate_simulation$x,k=2,
+                                                       initialisation_algorithm = "kmeans")
+
+  initial_estimates_quantiles <- initialize_em_univariate(x=univariate_simulation$x,k=2,
+                                                       initialisation_algorithm = "quantiles")
+
+  initial_estimates_rebmix <- initialize_em_univariate(x=univariate_simulation$x,k=2,
+                                                       initialisation_algorithm = "rebmix")
+
+  initial_estimates_small_em <- initialize_em_univariate(x=univariate_simulation$x,k=2,
+                                                       initialisation_algorithm = "small em")
+
+  initial_estimates_random <- initialize_em_univariate(x=univariate_simulation$x,k=2,
+                                                       initialisation_algorithm = "random")
 
 
 
+
+  ##################################################################
+  ##               estimation in univariate context               ##
+  ##################################################################
+
+  univariate_em_estimates <- emnmix_univariate(univariate_simulation$x, k = 2,
+                                               start = true_theta, iter=20)
+
+  univariate_em_mclust <- em_mclust_univariate(univariate_simulation$x, k = 2,
+                                               start = true_theta, iter=20)
+
+  univariate_em_bgmm <- em_bgmm_univariate(univariate_simulation$x, k = 2,
+                                               start = true_theta, iter=20)
+
+  univariate_em_Rmixmod <- em_Rmixmod_univariate(univariate_simulation$x, k = 2,
+                                           start = true_theta, iter=20)
+
+  univariate_em_mixtools <- em_mixtools_univariate(univariate_simulation$x, k = 2,
+                                                 start = true_theta, iter=20)
+
+  univariate_em_flexmix <- em_flexmix_univariate(univariate_simulation$x, k = 2,
+                                                 start = true_theta, iter=20)
+
+  univariate_em_EMCluster <- em_EMCluster_univariate(univariate_simulation$x, k = 2,
+                                                 start = true_theta, iter=20)
+
+  univariate_em_GMKMcharlie <- em_GMKMcharlie_univariate(univariate_simulation$x, k = 2,
+                                                     start = true_theta, iter=20)
+
+  expect_equal(univariate_em_mclust, univariate_em_Rmixmod, tolerance = 10^-3)
+
+})
+
+test_that("simulation and initialisation in multivariate GMM", {
   true_theta <- list(p=c(0.5, 0.5),
                      mu=matrix(c(20, 40, 40, 20), nrow = 2),
                      sigma=array(c(1, 0.2, 0.2, 1, 1, -0.2, -0.2, 1), dim=c(2, 2, 2)))
   multivariate_simulation <- simulate_multivariate_GMM (theta=true_theta, n=1000)
-
-  # assign("failed_hc_counter", 0, envir=globalenv())
   inititial_hc_estimates <- initialize_em_multivariate(multivariate_simulation$x, k = 2,
                                                     initialisation_algorithm = "hc")
 
@@ -38,7 +88,7 @@ test_that("simulation of univariate or multivariate GMM", {
 })
 
 
-test_that("GMM estimation in unsupervised case", {
+test_that("GMM estimation in multivariate case", {
   set.seed(20)
 
   # multivariate scenario
@@ -95,21 +145,6 @@ test_that("GMM estimation in unsupervised case", {
 
 })
 
-test_that("specific focus on my own developped function", {
-
-  distribution <- readRDS("./errors/estimation_failures/package_em R_init_algo_kmeans_step_16_100_observations.rds")
-
-  # initial_rebmix_estimates <- initialize_em_multivariate (x = distribution$simulated_distribution$x,
-  #                                                  k = 2,initialisation_algorithm = "rebmix")
-  #
-  # GMKMcharlie_multi_estimates <- em_GMKMcharlie_multivariate (x = multivariate_simulation$x, k = 2,
-  #                                                             itmax = 1, start = start, parallel = F)
-
-  own_EM_implementation <- em_mixtools_multivariate (x = distribution$simulated_distribution$x, k = 2,
-                                                itmax = 1000, epsilon = 10^-12, start = distribution$initial_estimates)
-
-
-})
 
 
 test_that("GMM estimation in supervised case", {
