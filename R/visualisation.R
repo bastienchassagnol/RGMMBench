@@ -316,47 +316,39 @@ plot_initialisation_time_computations <- function(init_time_data) {
 #' @author Bastien CHASSAGNOL
 #'
 #' @param time_data the running time data associated to the EM estimation performed by the reviewed packages
+#' @param grouping_colnames the names of the column, to establish the facets
 #'
 #' @return time_plots a ggplot object representing the running time curve distributions of the reviewed packages
 #'
 #' @export
 
-plot_time_computations <- function(time_data) {
-  time_data_summary <- time_data %>%
-    dplyr::group_by(
-      package, OVL, entropy, nobservations, prop_outliers,
-      skew, initialisation_method
-    ) %>%
-    dplyr::summarise(time_median = log10(median(time)), time_up = log10(quantile(time, probs = 0.95)), time_down = log10(quantile(time, probs = 0.05))) %>%
-    # use of log for visualisation purposes
-    dplyr::arrange(dplyr::desc(entropy), OVL) %>%
-    dplyr::mutate(
-      OVL = factor(OVL, labels = paste("Balanced OVL:", unique(OVL)), levels = unique(sort(OVL))),
-      entropy = factor(entropy, labels = paste("Entropy:", unique(entropy)), levels = unique(sort(entropy, decreasing = TRUE)))
-    )
+plot_time_computations <- function(time_data, grouping_colnames = c("package", "OVL", "entropy", "nobservations"),
+                                   with_outliers=F){
 
-  splitted_time_data <- split(time_data_summary, time_data_summary %>% dplyr::pull(initialisation_method))
-  time_plots <- Map(function(data_per_algo, name_algo) {
-    plot_per_algo <- ggplot(data_per_algo, aes(
-      x = nobservations, y = time_median,
-      col = package, linetype = package, shape = package
-    )) +
-      geom_point(size = 3) +
-      geom_line(size = 1.15) +
-      geom_ribbon(alpha = 0.1, aes(ymin = time_down, ymax = time_up, fill = package), colour = NA) +
-      facet_grid(OVL ~ factor(entropy, levels = rev(unique(entropy)))) +
-      # facet_grid(~ factor(prop_outliers, levels=unique(prop_outliers), labels=unique(paste("Proportion of outliers:", unique(prop_outliers))))) +
-      labs(x = "Number of observations (log10)", y = "Time in seconds (log10)") +
-      theme_bw() +
-      theme(
-        legend.position = "bottom", legend.title = element_blank(), axis.title = element_text(size = 18),
-        plot.title = element_blank(), legend.text = element_text(size = 25)
-      ) +
-      scale_shape_manual(values = c(1:length(unique(data_per_algo[["package"]]))))
-    return(plot_per_algo)
-  }, splitted_time_data, names(splitted_time_data))
+  time_summary <- time_data %>% dplyr::group_by(across(all_of(grouping_colnames))) %>%
+    dplyr::summarise(time_median= median(time), time_up=quantile(time, probs = 0.95), time_down=quantile(time, probs =0.05)) %>%
+    # dplyr::mutate(OVL=factor(OVL, labels= paste("Balanced OVL:", unique(OVL)), levels= unique(sort(OVL))),
+    #               entropy=factor(entropy, labels=paste("Entropy:", unique(entropy)), levels=unique(sort(entropy, decreasing = TRUE)))) %>%
+    dplyr::mutate(time_median=log10(time_median), time_up=log10(time_up), time_down=log10(time_down), nobservations=log10(nobservations))
 
-  return(time_plots)
+
+  time_plot <- ggplot(time_summary, aes(x = nobservations, y = time_median,
+                                        col=package, linetype=package, shape=package)) +
+    geom_point(size=3) +
+    geom_line(size=1.15) +
+    geom_ribbon(alpha=0.1, aes(ymin=time_down, ymax=time_up, fill=package), colour=NA)+
+    #facet_grid(OVL ~ factor(entropy, levels=rev(unique(entropy))))+
+    labs(x="Number of observations (log10)", y="Time in seconds (log10)") +
+    theme_bw() +
+    theme(legend.position="bottom", legend.title = element_blank(), axis.title = element_text(size=18),
+          plot.title = element_blank(), legend.text = element_text(size=22)) +
+    scale_shape_manual(values=c(1:length(unique(time_summary[["package"]]))))
+
+  # if (with_outliers)
+  #   time_plot <- time_plot +
+  #   facet_grid(~ factor(prop_outliers, levels=unique(prop_outliers), labels=unique(paste("Proportion of outliers:", unique(prop_outliers)))))
+
+  return(time_plot)
 }
 
 
@@ -530,12 +522,19 @@ plot_bivariate_normal_density_distribution <- function(theta, n=5000) {
 #' @export
 
 plot_correlation_Heatmap <- function(distribution_parameters) {
-  distribution_parameters <- distribution_parameters %>% dplyr::group_by(OVL, entropy, package, name_parameter, initialisation_method) %>%
-    mutate(index=dplyr::row_number()) %>% dplyr::ungroup() # add an index, that uniquely identify each experiment
+
+  # format the data
+  distribution_parameters_long <- distribution_parameters %>%
+    tidyr::pivot_longer(dplyr::matches("p[[:digit:]]+|mu|sd"), names_to = "name_parameter",
+                        values_to = "value_parameter") %>%
+    dplyr::select(c("package", "initialisation_method", "name_parameter", "value_parameter", "N.bootstrap")) %>%
+    dplyr::mutate(across(c("name_parameter", "package"), as.factor))
+    # dplyr::group_by(OVL, entropy, package, name_parameter, initialisation_method) %>%
+    # mutate(index=dplyr::row_number()) %>% dplyr::ungroup() # add an index, that uniquely identify each experiment
 
 
   # compute correlation matrix
-  total_correlation_scores_global <- lapply(split(distribution_parameters, distribution_parameters$initialisation_method),
+  total_correlation_scores_global <- lapply(split(distribution_parameters_long, distribution_parameters_long$initialisation_method),
                                             function(x) {
                                               cor_data <- tidyr::pivot_wider(x, names_from = c("package"), values_from="value_parameter") %>%
                                                 dplyr::select(unique(x %>% dplyr::pull(package))) %>% stats::cor(use="complete.obs")

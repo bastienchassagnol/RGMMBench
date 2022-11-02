@@ -793,15 +793,6 @@ em_flexmix_multivariate <- function(x = x, k = 2, itmax = 5000, epsilon = 10^-12
   dim_gaussian <- ncol(x); cholsigma <- array(0, dim=c(dim_gaussian, dim_gaussian,k))
   eta <- predict_posterior_probability(x, start)$eta
 
-  # we have to provide a matrix of probability for each component
-  # for (j in 1:k) {
-  #   cholsigma[,,j] <- chol(start$sigma[,,j]) # cholesky decomposition is required as input for the mclust VVV package
-  # }
-  # start_em <- list(pro = start$p, mean = start$mu, variance = list(sigma=start$sigma,
-  #                                                                  cholsigma=cholsigma))
-  # eta <- mclust::estepVVV(x, parameters = start_em,
-  #                         control=mclust::emControl(tol = epsilon, itmax = itmax))$z # to be compared with mu own developed function
-
   # fit the model
   fit <- flexmix::flexmix(x ~ 1,
                           k = k, cluster = eta,
