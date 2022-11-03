@@ -25,6 +25,40 @@ compute_overlap_roots <- function(p1, p2, mu1, mu2, sigma1, sigma2) {
   }
 }
 
+#' Compute average overlap between components
+#'
+#' Internally, it is the function MixSim::overlap which is used to generate an approximate pairwise
+#' probability to wrongfully assign one component to another. Unfortunately, this function does not
+#' the global overlap that we approximate there by averaging pairwise overlaps + compute the overlap
+#' between two components accounting for their respective proportions in the mixture
+#'
+#' @author Bastien CHASSAGNOL
+#'
+#' @param true_theta the parameters of the GMM
+#' @param k the number of components
+#' @return the average overlap
+
+
+compute_average_overlap <- function (true_theta, k=length(true_theta$p)) {
+  # generate relevant values for the computation of the overlap
+  misclassif_mat <- MixSim::overlap(Pi = true_theta$p,
+                                    Mu = as.matrix(true_theta$mu),
+                                    S = as.matrix(true_theta$sigma))$OmegaMap
+  pairwise_overlap <- c(); p <- true_theta$p
+
+  # generate the average of pairwise overlaps
+  for (i in 1:(k-1)) {
+    for (j in (i+1):k) {
+      pairwise_overlap <- c(pairwise_overlap,
+                            stats::weighted.mean(x=c(misclassif_mat[i,j], misclassif_mat[j,i]), w=p[c(i,j)]))
+    }
+  }
+  return(mean(pairwise_overlap))
+}
+
+
+
+
 #' Compute a set of points, in order to draw 95% confidence intervals
 #'
 #' @author Bastien CHASSAGNOL

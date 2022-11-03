@@ -2,6 +2,21 @@ test_that("entropy function", {
   expect_equal(compute_shannon_entropy(c(0.5, 0.5)), 1)
 })
 
+test_that("average_overlap", {
+  # univariate multi component
+  true_theta <- list(p=c(0.1, 0.7, 0.1, 0.1), mu=c(0, 4, 8, 12), sigma=rep(2, 4))
+  expect_equal(compute_average_overlap(true_theta), 0.0287, tolerance = 10^-2)
+
+  # bivariate two components
+  true_theta <- list(p=c(0.9, 0.1), mu=matrix(c(0, 2, 2, 0), nrow = 2, ncol = 2),
+                     sigma=array(c(1, -0.8, -0.8, 1, 1, 0.8, 0.8, 1), dim=c(2, 2, 2)))
+  expect_equal(compute_average_overlap(true_theta), 0.0165, tolerance = 10^-2)
+
+  true_theta <- list(p=c(0.9, 0.1), mu=matrix(c(0, 2, 2, 0), nrow = 2, ncol = 2),
+                     sigma=array(c(1, 0.8, 0.8, 1, 1, -0.8, -0.8, 1), dim=c(2, 2, 2)))
+  expect_equal(compute_average_overlap(true_theta), 0.0497, tolerance = 10^-2)
+})
+
 
 test_that("positive definitess", {
   cov_matrix <- matrix(c(1, 0.2, 0.2, 1), nrow = 2)
