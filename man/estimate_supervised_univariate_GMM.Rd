@@ -5,9 +5,9 @@
 \alias{estimate_supervised_multivariate_GMM}
 \title{Estimate the parameters in supervised case (all labels associated to the observations are available)}
 \usage{
-estimate_supervised_univariate_GMM(x, s, s_outliers = s)
+estimate_supervised_univariate_GMM(x, s, s_outliers = s, k = length(unique(s)))
 
-estimate_supervised_multivariate_GMM(x, s, k = 2)
+estimate_supervised_multivariate_GMM(x, s, k = length(unique(s)))
 }
 \arguments{
 \item{x}{the univariate or multivariate distribution of observed variables}

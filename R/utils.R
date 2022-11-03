@@ -353,16 +353,24 @@ format_theta_output <- function(theta) {
 #' @rdname format_theta_output
 unformat_theta_output <- function(formatted_theta) {
 names_theta <- names(formatted_theta); theta <- list()
-k <- stringr::str_detect(names_theta, "^p[[:digit:]]+$") %>% sum()
-dim_gaussian <- stringr::str_detect(names_theta, "mu") %>% sum() / k
 # deal with proportions
 theta$p <- formatted_theta[stringr::str_detect(names_theta, "^p[[:digit:]]+$")] %>% unlist() %>% unname()
+k <- stringr::str_detect(names_theta, "^p[[:digit:]]+$") %>% sum()
 
-# deal with mean vector
-theta$mu <- matrix(formatted_theta[stringr::str_detect(names_theta, "mu")] %>% unlist(), nrow=dim_gaussian, ncol=k)
-
-# deal with sigma
-theta$sigma <- matrix(formatted_theta[stringr::str_detect(names_theta, "sd")] %>% unlist(), nrow=k, byrow = T) %>% trig_mat_to_array()
+# deal specifically per component parameter's distribution
+if (any(grepl("sd", names_theta))) { # multivariate setting
+  dim_gaussian <- stringr::str_detect(names_theta, "mu") %>% sum() / k
+  # deal with mean vector
+  theta$mu <- matrix(formatted_theta[stringr::str_detect(names_theta, "mu")] %>% unlist(), nrow=dim_gaussian, ncol=k)
+  # deal with sigma
+  theta$sigma <- matrix(formatted_theta[stringr::str_detect(names_theta, "sd")] %>% unlist(), nrow=k, byrow = T) %>% trig_mat_to_array()
+}
+else { # univariate setting
+  # deal with mean vector
+  theta$mu <- formatted_theta[stringr::str_detect(names_theta, "mu")] %>% unlist() %>% unname()
+  # deal with sigma
+  theta$sigma <- formatted_theta[stringr::str_detect(names_theta, "sigma")] %>% unlist() %>% unname()
+}
 return(theta)
 }
 

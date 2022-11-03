@@ -8,7 +8,6 @@
 \alias{em_flexmix_univariate}
 \alias{em_mixtools_univariate}
 \alias{em_mclust_univariate}
-\alias{em_DCEM_univariate}
 \alias{em_GMKMcharlie_univariate}
 \alias{em_otrimle}
 \title{Custom R implementation of the EM algorithm in the univariate context}
@@ -82,16 +81,6 @@ em_mclust_univariate(
   itmax = 5000,
   epsilon = 10^-12,
   prior = NULL,
-  ...
-)
-
-em_DCEM_univariate(
-  x = x,
-  k = 2,
-  initialisation_algorithm = "hc",
-  itmax = 5000,
-  epsilon = 10^-12,
-  start = NULL,
   ...
 )
 

@@ -6,19 +6,26 @@
 \title{Plot the true density distributions, in the univariate context}
 \usage{
 plot_univariate_normal_density_distribution(
-  sigma_values,
-  mean_values,
-  proportions
+  true_theta,
+  nobservations = 1000,
+  k = length(true_theta$p)
 )
 
-plot_bivariate_normal_density_distribution(theta, n = 5000)
+plot_bivariate_normal_density_distribution(
+  true_theta,
+  nobservations = 1000,
+  k = length(true_theta$p)
+)
 }
 \arguments{
-\item{proportions, mean_values, sigma_values}{parameters of the several components represented,
-represented by a list of vector parameters}
+\item{true_theta}{the true values of the parameters (with p, mu and sigma)}
+
+\item{nobservations}{the number of bins used to regenerate the global mixture distribution}
+
+\item{k}{the number of components, by default, the number of ratio elements stored in item p of true_theta}
 }
 \value{
-density_plots a ggplot object representing the distributions of the density functions
+density_plots a ggplot object representing the distributions of empirical univariate density functions
 }
 \description{
 Plot the true density distributions, in the univariate context

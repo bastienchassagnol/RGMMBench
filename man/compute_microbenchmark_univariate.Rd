@@ -10,6 +10,7 @@ compute_microbenchmark_univariate(
   sigma_values,
   mean_values,
   proportions,
+  cores = getOption("mc.cores", parallel::detectCores()),
   prop_outliers = 0,
   nobservations = c(100, 1000, 10000),
   Nbootstrap = 100,

@@ -398,13 +398,7 @@ emnmix_univariate <- function(x, k, itmax = 5000, epsilon = 10^-12, nstart = 10L
     parametric_parameters <- apply(eta, 2, function(w)
       stats::cov.wt(as.matrix(x), wt=w, cor=F, method="ML", center = T))
     mu <- purrr::map_dbl(parametric_parameters, "center")
-    sigma <- purrr::map_dbl(parametric_parameters, "cov") %>% sqrt()
-
-    # S1 <- apply(eta * x, 2, sum)
-    # S2 <- apply(eta * x^2, 2, sum)
-    #
-    # mu <- S1 / S0
-    # sigma <- sqrt((S2 - 2 * mu * S1 + mu^2 * S0) / S0)
+    sigma <- sqrt(purrr::map_dbl(parametric_parameters, "cov"))
 
     # deal with underflow or removal of components
     if (!check_parameters_validity_univariate(list(p = p, mu = mu, sigma = sigma), k = k)) {
@@ -1056,7 +1050,7 @@ estimate_supervised_univariate_GMM <- function(x, s, s_outliers=s, k=length(uniq
   parametric_parameters <- apply(eta, 2, function(w)
     stats::cov.wt(as.matrix(x), wt=w, cor=F, method="ML", center = T))
   mu <- purrr::map_dbl(parametric_parameters, "center")
-  sigma <- purrr::map_dbl(parametric_parameters, "cov") %>% sqrt()
+  sigma <- sqrt(purrr::map_dbl(parametric_parameters, "cov"))
 
   return(list(p=p, mu=mu, sigma=sigma))
 }

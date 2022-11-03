@@ -4,10 +4,17 @@
 \alias{plot_ellipses_bivariate}
 \title{Plot the confidence interval ellipses}
 \usage{
-plot_ellipses_bivariate(distribution_parameters, alpha = 0.05, npoints = 500)
+plot_ellipses_bivariate(
+  distribution_parameters,
+  true_theta,
+  alpha = 0.05,
+  npoints = 500
+)
 }
 \arguments{
 \item{distribution_parameters}{the estimated bootstrap distributions}
+
+\item{true_theta}{the true values of the parameters (with p, mu and sigma)}
 
 \item{alpha}{the confidence interval}
 

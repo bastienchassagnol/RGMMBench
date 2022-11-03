@@ -8,7 +8,6 @@
 \alias{em_flexmix_multivariate}
 \alias{em_mixtools_multivariate}
 \alias{em_mclust_multivariate}
-\alias{em_DCEM_multivariate}
 \alias{em_GMKMcharlie_multivariate}
 \title{Custom R implementation of the EM algorithm in the multivariate context}
 \usage{
@@ -84,16 +83,6 @@ em_mclust_multivariate(
   itmax = 5000,
   epsilon = 10^-12,
   prior = NULL,
-  ...
-)
-
-em_DCEM_multivariate(
-  x = x,
-  k = 2,
-  initialisation_algorithm = "hc",
-  itmax = 5000,
-  epsilon = 10^-12,
-  start = NULL,
   ...
 )
 
