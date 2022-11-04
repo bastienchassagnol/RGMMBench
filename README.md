@@ -67,7 +67,7 @@ To get the most recent version, open `R` and run:
 
 ```R
 if(!require(remotes)) install.packages("remotes")
-remotes::install_github("bastienchassagnol/RGMMBench")
+remotes::install_github("bastienchassagnol-servier/RGMMBench")
 ```
 
 The package is composed of four scripts: **main** contains the main script to load required libraries and executes auxiliary functions to reproduce figures and tables of the paper
