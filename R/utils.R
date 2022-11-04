@@ -37,6 +37,8 @@ compute_overlap_roots <- function(p1, p2, mu1, mu2, sigma1, sigma2) {
 #' @param true_theta the parameters of the GMM
 #' @param k the number of components
 #' @return the average overlap
+#'
+#' @export
 
 
 compute_average_overlap <- function (true_theta, k=length(true_theta$p)) {
@@ -49,8 +51,7 @@ compute_average_overlap <- function (true_theta, k=length(true_theta$p)) {
   # generate the average of pairwise overlaps
   for (i in 1:(k-1)) {
     for (j in (i+1):k) {
-      pairwise_overlap <- c(pairwise_overlap,
-                            stats::weighted.mean(x=c(misclassif_mat[i,j], misclassif_mat[j,i]), w=p[c(i,j)]))
+      pairwise_overlap <- c(pairwise_overlap,misclassif_mat[i,j] * p[i] + misclassif_mat[j,i] * p[j])
     }
   }
   return(mean(pairwise_overlap))

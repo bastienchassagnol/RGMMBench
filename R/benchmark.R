@@ -47,10 +47,8 @@ benchmark_univariate_GMM_estimation <- function(mixture_functions, cores = getOp
           true_theta <- list(p = p, mu = mu, sigma = sigma)
           formatted_true_theta <- true_theta %>% format_theta_output()
           k <- length(p); bootstrap_colnames <- names(formatted_true_theta)
-          balanced_ovl <- MixSim::overlap(Pi = rep(1 / k, k), Mu = as.matrix(true_theta$mu), S = as.matrix(true_theta$sigma))$BarOmega %>%
-            signif(digits = 2)# compute OVL
-          pairwise_ovl <- MixSim::overlap(Pi = true_theta$p, Mu = as.matrix(true_theta$mu), S = as.matrix(true_theta$sigma))$BarOmega %>%
-            signif(digits = 2)
+          balanced_ovl <- compute_average_overlap(true_theta %>% magrittr::inset2("p", rep(1/k, k))) %>% signif(digits = 2)
+          pairwise_ovl <- compute_average_overlap(true_theta) %>% signif(digits = 2)
           entropy_value <- compute_shannon_entropy(p) %>% signif(digits = 2) # compute entropy
 
           for (n in nobservations) {
@@ -164,10 +162,8 @@ benchmark_multivariate_GMM_estimation <- function(mixture_functions, mean_values
         true_theta <- list(p = p, mu = mu, sigma = sigma)
         formatted_true_theta <- true_theta %>% format_theta_output()
         k <- length(p); bootstrap_colnames <- names(formatted_true_theta)
-        balanced_ovl <- MixSim::overlap(Pi = rep(1 / k, k), Mu = t(mu), S = sigma)$BarOmega %>%
-          signif(digits = 2)# compute OVL
-        pairwise_ovl <- MixSim::overlap(Pi = p, Mu = t(mu), S = sigma)$BarOmega %>%
-          signif(digits = 2)
+        balanced_ovl <- compute_average_overlap(true_theta %>% magrittr::inset2("p", rep(1/k, k))) %>% signif(digits = 2)
+        pairwise_ovl <- compute_average_overlap(true_theta) %>% signif(digits = 2)
         entropy_value <- compute_shannon_entropy(p) %>% signif(digits = 2) # compute entropy
 
 
@@ -295,16 +291,14 @@ compute_microbenchmark_univariate <- function(mixture_functions,
           true_theta <- list(p=p, mu=mu, sigma=sigma)
           formatted_true_theta <- true_theta %>% format_theta_output()
           k <- length(p); bootstrap_colnames <- names(formatted_true_theta)
-          balanced_ovl <- MixSim::overlap(Pi = rep(1 / k, k), Mu = t(mu), S = sigma)$BarOmega %>%
-            signif(digits = 2)# compute OVL
-          pairwise_ovl <- MixSim::overlap(Pi = p, Mu = t(mu), S = sigma)$BarOmega %>%
-            signif(digits = 2)
+          balanced_ovl <- compute_average_overlap(true_theta %>% magrittr::inset2("p", rep(1/k, k))) %>% signif(digits = 2)
+          pairwise_ovl <- compute_average_overlap(true_theta) %>% signif(digits = 2)
           entropy_value <- compute_shannon_entropy(p) %>% signif(digits = 2) # compute entropy
 
           for (n in nobservations) {
             message(paste("We aim at learning the following estimates: \n",
                           paste0(bootstrap_colnames, ": ", formatted_true_theta, collapse=" // "), "with", n, "nobservations."))
-            simulated_distribution <- simulate_multivariate_GMM(n = n, theta = true_theta) # simulation of the experience
+            simulated_distribution <- simulate_univariate_GMM(n = n, theta = true_theta) # simulation of the experience
             time_configurations <- parallel::mclapply(1:Nbootstrap, function(t) {
               init_temp <- tibble::tibble();  mbm_temp <- tibble::tibble() # store intermediate computations
               for (init_algo in initialisation_algorithms) {
@@ -415,10 +409,8 @@ compute_microbenchmark_multivariate <- function(mixture_functions,
         true_theta <- list(p=p, mu=mu, sigma=sigma)
         formatted_true_theta <- true_theta %>% format_theta_output()
         k <- length(p); bootstrap_colnames <- names(formatted_true_theta)
-        balanced_ovl <- MixSim::overlap(Pi = rep(1 / k, k), Mu = t(mu), S = sigma)$BarOmega %>%
-          signif(digits = 2)# compute OVL
-        pairwise_ovl <- MixSim::overlap(Pi = p, Mu = t(mu), S = sigma)$BarOmega %>%
-          signif(digits = 2)
+        balanced_ovl <- compute_average_overlap(true_theta %>% magrittr::inset2("p", rep(1/k, k))) %>% signif(digits = 2)
+        pairwise_ovl <- compute_average_overlap(true_theta) %>% signif(digits = 2)
         entropy_value <- compute_shannon_entropy(p) %>% signif(digits = 2) # compute entropy
 
         for (n in nobservations) {

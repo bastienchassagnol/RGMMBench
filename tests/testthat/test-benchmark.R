@@ -15,8 +15,7 @@ test_that("univariate benchmark", {
                                                                       initialisation_algorithms = c("kmeans"),
                                                                       sigma_values=list("low OVL"= rep(0.3, 2)),
                                                                       mean_values=list(c(0, 4)),
-                                                                      proportions = list( "balanced"=c(0.5, 0.5),
-                                                                                          "small imbalanced"=c(0.8, 0.2)),
+                                                                      proportions = list("small imbalanced"=c(0.8, 0.2)),
                                                                       prop_outliers = c(0),
                                                                       Nbootstrap=5,  nobservations=c(100))
 

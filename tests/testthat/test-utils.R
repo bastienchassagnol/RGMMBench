@@ -5,7 +5,7 @@ test_that("entropy function", {
 test_that("average_overlap", {
   # univariate multi component
   true_theta <- list(p=c(0.1, 0.7, 0.1, 0.1), mu=c(0, 4, 8, 12), sigma=rep(2, 4))
-  expect_equal(compute_average_overlap(true_theta), 0.0287, tolerance = 10^-2)
+  expect_equal(compute_average_overlap(true_theta), 0.0148, tolerance = 10^-2)
 
   # bivariate two components
   true_theta <- list(p=c(0.9, 0.1), mu=matrix(c(0, 2, 2, 0), nrow = 2, ncol = 2),
