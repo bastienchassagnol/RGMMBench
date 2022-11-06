@@ -15,26 +15,28 @@
 plot_boxplots_parameters <- function(distribution_parameters, true_theta, remove_outliers = T, size_tag=4, num_col=length(true_theta$p)) {
 
   # format true theta values, according to their use
-  true_theta <- format_theta_output(true_theta)
-  true_theta_df <- tibble::tibble(name_parameter = names(unlist(true_theta)), true_value = unlist(true_theta))
+  formatted_true_theta <- format_theta_output(true_theta)
+  true_theta_df <- tibble::tibble(name_parameter = names(unlist(formatted_true_theta)) %>%
+                                    factor(levels=unique(names(unlist(formatted_true_theta)))),
+                                  true_value = unlist(formatted_true_theta))
 
 
   # format distribution data
   distribution_parameters <- distribution_parameters %>%
     tidyr::pivot_longer(dplyr::matches("p[[:digit:]]+|mu|sigma|sd"), names_to = "name_parameter",
                         values_to = "value_parameter") %>%
-    dplyr::mutate(across(c("name_parameter", "package"), as.factor)) %>%
-    select(c("package", "initialisation_method", "name_parameter", "value_parameter"))
+    select(c("package", "initialisation_method", "name_parameter", "value_parameter")) %>%
+    dplyr::mutate(package=factor(package, levels = unique(package)),
+                  name_parameter=factor(name_parameter, levels=unique(name_parameter)))
+
   if (remove_outliers) {
     distribution_parameters <- distribution_parameters %>%
       dplyr::group_by(name_parameter) %>%
       dplyr::filter(value_parameter > (quantile(value_parameter, probs = c(0.25)) - 1.5 * IQR(value_parameter)) &
                       value_parameter < (quantile(value_parameter, probs = c(0.75)) + 1.5 * IQR(value_parameter)))
   }
-
   # generate Boxplots
-  boxplot_parameters <- ggplot(distribution_parameters, aes(x = factor(package, levels = unique(package)),
-                                                            y = value_parameter, fill = initialisation_method)) +
+  boxplot_parameters <- ggplot(distribution_parameters, aes(x = package, y = value_parameter, fill = initialisation_method)) +
     geom_boxplot(outlier.shape = 16, outlier.size = 0.5, position = position_dodge(width = 0.9), width = 0.4) +
     stat_summary(
       fun = mean, geom = "point", shape = 3, size = 1, colour = "yellow",
@@ -43,8 +45,6 @@ plot_boxplots_parameters <- function(distribution_parameters, true_theta, remove
     facet_wrap(~name_parameter, ncol = num_col, scales = "free_y") +
     theme_bw() +
     theme(legend.position = "bottom",
-      axis.text.x = element_text(angle = 35, size = 15, vjust = 0.6),
-      # axis.text.x = ggtext::element_markdown(angle = 35, size = 15, vjust =0.6),
       axis.ticks.length = unit(.1, "cm"),
       legend.text = element_text(size = 25),
       strip.text = element_blank(),
@@ -56,7 +56,15 @@ plot_boxplots_parameters <- function(distribution_parameters, true_theta, remove
     scale_fill_viridis_d() +
     geom_hline(data = true_theta_df, aes(yintercept = true_value), col = "red", linetype = "dashed", size = 0.8)
 
-  boxplot_parameters <- egg::tag_facet(boxplot_parameters, tag_pool = distribution_parameters$name_parameter %>% unique() %>% sort(),
+  if (require("ggtext"))
+    boxplot_parameters <- boxplot_parameters + theme(axis.text.x = ggtext::element_markdown(angle = 90, size = 12))
+  else {
+    message("For the best formatting of packages labels, please install the ggtext if possible.")
+    boxplot_parameters <- boxplot_parameters + theme(axis.text.x = element_text(angle = 90, size = 12))
+  }
+
+  boxplot_parameters <- egg::tag_facet(boxplot_parameters,
+                                       tag_pool = distribution_parameters$name_parameter %>% unique() %>% sort(),
                                        open = "", close = "", hjust = -0.2, size = size_tag)
 
   return(boxplot_parameters)
@@ -201,7 +209,6 @@ plot_Hellinger <- function(distribution_parameters, true_theta, num_col=length(t
     facet_wrap(~component, ncol = num_col) +
     theme_bw() +
     theme(legend.position = "bottom",
-      axis.text.x = element_text(angle = 35, size = 15, vjust = 0.6),
       axis.ticks.length = unit(.1, "cm"),
       legend.text = element_text(size = 25),
       plot.title = element_blank(),
@@ -211,6 +218,12 @@ plot_Hellinger <- function(distribution_parameters, true_theta, num_col=length(t
       panel.spacing = unit(.2, "pt")) +
     scale_fill_viridis_d()
 
+  if (require("ggtext"))
+    boxplot_Hellinger <- boxplot_Hellinger + theme(axis.text.x = ggtext::element_markdown(angle = 90, size = 12))
+  else {
+    message("For the best formatting of packages labels, please install the ggtext if possible.")
+    boxplot_Hellinger <- boxplot_Hellinger + theme(axis.text.x = element_text(angle = 90, size = 12))
+  }
   return(boxplot_Hellinger)
 }
 
@@ -280,8 +293,8 @@ plot_univariate_normal_density_distribution <- function(true_theta, nobservation
     density_data <- density_data %>% tibble::add_column("component {i}" := true_theta$p[i] *
                                                     stats::dnorm(density_data$x, mean=true_theta$mu[i], sd = true_theta$sigma[i]))
   }
-  density_data <- density_data %>% dplyr::mutate(total=rowSums(dplyr::across(dplyr::starts_with("component ")))) %>%
-    tidyr::pivot_longer(cols =dplyr::starts_with(c("component ", "total")), names_to = "components", values_to = "expression") %>%
+  density_data <- density_data %>% dplyr::mutate(mixture=rowSums(dplyr::across(dplyr::starts_with("component ")))) %>%
+    tidyr::pivot_longer(cols =dplyr::starts_with(c("component ", "mixture")), names_to = "components", values_to = "expression") %>%
     dplyr::mutate(components=as.factor(gsub("component ", "", components)))
 
   # generate the corresponding density plot

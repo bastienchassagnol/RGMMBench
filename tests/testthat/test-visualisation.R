@@ -31,6 +31,34 @@ test_that("multivariate visualisation", {
 
 })
 
+# #### univariate distributions
+# univariate_distribution_parameters <- readRDS("../mixture_models/results/univariate/univariate_distributions.rds") %>%
+#   dplyr::group_by(ID, package, initialisation_method) %>%
+#   dplyr::mutate(N.bootstrap=dplyr::row_number()) %>% dplyr::ungroup()
+# saveRDS(univariate_distribution_parameters, "../mixture_models/results/univariate/univariate_distributions.rds")
+# univariate_configuration <- readRDS("../mixture_models/results/univariate/univariate_configuration_scenario.rds")
+# ## test representations
+# true_theta <- univariate_configuration %>% filter(ID=="U9") %>%
+#   pull(true_parameters) %>% magrittr::extract2(1)
+# RGMMBench::plot_boxplots_parameters(univariate_distribution_parameters %>% filter(ID=="U9"), true_theta = true_theta)
+# RGMMBench::plot_correlation_Heatmap(univariate_distribution_parameters %>% filter(ID=="U9"))
+# RGMMBench::plot_Hellinger(univariate_distribution_parameters %>% filter(ID=="U9"), true_theta = true_theta)
+# RGMMBench::plot_univariate_normal_density_distribution(true_theta = true_theta, nobservations = 2000)
+#
+#
+# multivariate_distribution_parameters <- readRDS("../mixture_models/results/multivariate/bivariate_distributions.rds") %>%
+#   dplyr::group_by(ID, package, initialisation_method) %>%
+#   dplyr::mutate(N.bootstrap=dplyr::row_number()) %>% dplyr::ungroup()
+# multivariate_configuration <- readRDS("../mixture_models/results/multivariate/bivariate_configuration_scenario.rds")
+# ## test representations
+# true_theta <- multivariate_configuration %>% filter(ID=="B11") %>%
+#   pull(true_parameters) %>% magrittr::extract2(1)
+# RGMMBench::plot_boxplots_parameters(multivariate_distribution_parameters %>% filter(ID=="B11"), true_theta = true_theta)
+# RGMMBench::plot_correlation_Heatmap(multivariate_distribution_parameters %>% filter(ID=="B11"))
+# RGMMBench::plot_Hellinger(multivariate_distribution_parameters %>% filter(ID=="B11"), true_theta = true_theta)
+# RGMMBench::plot_bivariate_normal_density_distribution(true_theta = true_theta, nobservations = 2000)
+
+
 
 # distributions_plots <- purrr::imap(split(distribution_parameters, distribution_parameters$true_parameters_factor),
 #                                    function(dist_per_fact, title) {

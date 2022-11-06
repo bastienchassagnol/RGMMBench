@@ -416,15 +416,15 @@ return(theta)
 #' @return the Hellinger distance between two multivariate Gaussian distributions
 hellinger <- function (mu1, Sigma1, mu2, Sigma2) {
   p <- length(mu1);   d <- mu1 - mu2
-  vars <- (Sigma1 + Sigma2)/2
   # in univariate dimension
   if (p == 1) {
-    d <- sqrt(Sigma1 * Sigma2/ vars) *
-      exp((-1/4) * d^2/(2*vars))
-    return(sqrt(1 - d))
+    vars <- Sigma1^2 + Sigma2^2
+    bc <- sqrt(2 *Sigma1 * Sigma2/ vars) *exp((-1/4) * d^2/vars) # Bhattacharyya coefficient
+    return(sqrt(abs(1 - bc)))
   }
   # in multivariate dimension
   else {
+    vars <- (Sigma1 + Sigma2)/2
     hell_dist <- det(Sigma1)^(1/4) * det(Sigma2)^(1/4) / det(vars)^(1/2) *
       exp((-1/8) * maha(d, vars))
     return(sqrt(1 - hell_dist) %>% as.numeric())
