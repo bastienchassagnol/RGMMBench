@@ -19,8 +19,8 @@ test_that("univariate benchmark", {
                                                                       prop_outliers = c(0),
                                                                       Nbootstrap=5,  nobservations=c(100))
 
-  saveRDS(test_parameters_distribution,
-          file.path("./results", "univariate_test_distribution.rds"))
+  # saveRDS(test_parameters_distribution,
+  #         file.path("./results", "univariate_test_distribution.rds"))
 })
 
 
@@ -56,8 +56,8 @@ test_that("multivariate benchmark", {
     proportions = list("balanced"=c(0.5, 0.5)),
     Nbootstrap = 4, nobservations = c(100))
 
-  saveRDS(test_parameters_distribution,
-          file.path("./results", "multivariate_test_distribution.rds"))
+  # saveRDS(test_parameters_distribution,
+  #         file.path("./results", "multivariate_test_distribution.rds"))
 })
 
 
@@ -94,8 +94,8 @@ test_that("computation time in multivariate", {
     proportions = list("balanced"=c(0.5, 0.5)),
     Nbootstrap = 4, nobservations = c(100, 200, 500))
 
-  saveRDS(test_parameters_distribution,
-          file.path("./results", "multivariate_test_time_computations.rds"))
+  # saveRDS(test_parameters_distribution,
+  #         file.path("./results", "multivariate_test_time_computations.rds"))
 })
 
 test_that("univariate time computation", {
@@ -120,8 +120,8 @@ test_that("univariate time computation", {
                                                                       prop_outliers = c(0),
                                                                       Nbootstrap=5,  nobservations=c(100, 200))
 
-  saveRDS(test_parameters_distribution,
-          file.path("./results", "univariate_test_time_computations.rds"))
+  # saveRDS(test_parameters_distribution,
+  #         file.path("./results", "univariate_test_time_computations.rds"))
 })
 
 

@@ -14,8 +14,8 @@ test_that("simulation of univariate GMM", {
   #################################################################
   ##          test initialisation in univariate context          ##
   #################################################################
-  initial_estimates_hc <- initialize_em_univariate(x=univariate_simulation$x,k=2,
-                                                   initialisation_algorithm = "hc")
+  expect_warning(initialize_em_univariate(x=univariate_simulation$x,k=2,
+                                                   initialisation_algorithm = "hc"))
 
   initial_estimates_kmeans <- initialize_em_univariate(x=univariate_simulation$x,k=2,
                                                        initialisation_algorithm = "kmeans")
@@ -67,26 +67,6 @@ test_that("simulation of univariate GMM", {
 
 })
 
-test_that("simulation and initialisation in multivariate GMM", {
-  true_theta <- list(p=c(0.5, 0.5),
-                     mu=matrix(c(20, 40, 40, 20), nrow = 2),
-                     sigma=array(c(1, 0.2, 0.2, 1, 1, -0.2, -0.2, 1), dim=c(2, 2, 2)))
-  multivariate_simulation <- simulate_multivariate_GMM (theta=true_theta, n=1000)
-  inititial_hc_estimates <- initialize_em_multivariate(multivariate_simulation$x, k = 2,
-                                                    initialisation_algorithm = "hc")
-
-  inititial_small_EM_estimates <- initialize_em_multivariate(multivariate_simulation$x, k = 2,
-                                                           initialisation_algorithm = "small em")
-
-  Rmixmod_multi_estimates <- em_Rmixmod_multivariate (x = multivariate_simulation$x, k = 2,
-                                                      itmax = 200, epsilon = 10^-6,
-                                                      start = inititial_kmeans_estimates)
-
-  expect_error(initialize_em_multivariate(multivariate_simulation$x, k = 2,
-                                          initialisation_algorithm = "quantiles"))
-
-})
-
 
 test_that("GMM estimation in multivariate case", {
   set.seed(20)
@@ -129,10 +109,6 @@ test_that("GMM estimation in multivariate case", {
                                                 itmax = 1, epsilon = 10^-6,
                                                 start = inititial_kmeans_estimates)
 
-  DCEM_multi_estimates <- em_DCEM_multivariate (x = multivariate_simulation$x, k = 2,
-                                                itmax = 1, epsilon = 10^-6,
-                                                start = inititial_kmeans_estimates)
-
   GMKMcharlie_multi_estimates <- em_GMKMcharlie_multivariate (x = multivariate_simulation$x, k = 2,
                                                         itmax = 1, epsilon = 10^-6, embedNoise = 0,
                                                         start = inititial_kmeans_estimates, parallel = F)
@@ -140,8 +116,6 @@ test_that("GMM estimation in multivariate case", {
 
 
   expect_equal(own_EM_implementation, flexmix_multi_estimates) # GMKMCharlie as well
-
-
 
 })
 
@@ -155,9 +129,7 @@ test_that("GMM estimation in supervised case", {
 
   multivariate_simulation <- simulate_multivariate_GMM (theta=true_theta, n=2000)
   estimated_theta <- estimate_supervised_multivariate_GMM(multivariate_simulation$x, multivariate_simulation$s)
-
-  expect_equal(estimated_theta,
-               readRDS(test_path("fixtures", "two_component_3D_supervised_estimation.rds")))
+  expect_equal(estimated_theta, readRDS(test_path("fixtures", "two_component_3D_supervised_estimation.rds")))
 })
 
 

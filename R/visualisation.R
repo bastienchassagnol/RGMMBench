@@ -64,7 +64,7 @@ plot_boxplots_parameters <- function(distribution_parameters, true_theta, remove
   }
 
   boxplot_parameters <- egg::tag_facet(boxplot_parameters,
-                                       tag_pool = distribution_parameters$name_parameter %>% unique() %>% sort(),
+                                       tag_pool = true_theta_df$name_parameter,
                                        open = "", close = "", hjust = -0.2, size = size_tag)
 
   return(boxplot_parameters)
@@ -130,11 +130,10 @@ plot_ellipses_bivariate <- function(distribution_parameters, true_theta, alpha=0
     facet_wrap(~initialisation_method) +
     coord_fixed()+
     theme(legend.position = "bottom",
-          title = element_text(size = 22),
+          title = element_blank(),
           legend.text = element_text(size = 18),
           axis.title = element_blank(),
-          # axis.title.y = element_text(angle = 0, vjust=0.5),
-          strip.text.x = element_text(size = 12, face = "bold")) +
+          strip.text = element_text(size = 15, face = "bold")) +
     geom_path(data = ellipse_standard_data,mapping=aes(x=x, y=y, linetype=component),
               inherit.aes = F, col="black", size=2, alpha=0.25) +
     guides(linetype = guide_legend(override.aes = list(alpha = 0.25, shape=NA, size=1)))+
@@ -144,8 +143,7 @@ plot_ellipses_bivariate <- function(distribution_parameters, true_theta, alpha=0
                size=3, inherit.aes = F, show.legend = F) +
     scale_color_manual(name="centroid", values=c("red", "green"),
                        guide = guide_legend(override.aes = list(shape = c(16, 17),
-                                                                color = c("red", "green")))) +
-    labs(linetype="Cluster:")
+                                                                color = c("red", "green"))))
 
 
 

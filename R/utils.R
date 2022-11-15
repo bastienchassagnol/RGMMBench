@@ -83,9 +83,8 @@ e1 <- es$vec %*% diag(sqrt(es$val))
 r1 <- sqrt(qchisq(1 - alpha, 2))
 theta <- seq(0, 2 * pi, len = npoints)
 v1 <- cbind(r1 * cos(theta), r1 * sin(theta))
-pts <- t(mu - (e1 %*% t(v1))) %>% tibble::as_tibble()
-colnames(pts) <- c("x", "y")
-return(pts)
+pts <- t(mu - (e1 %*% t(v1))); colnames(pts) <- c("x", "y")
+return(pts %>% tibble::as_tibble())
 }
 
 
@@ -373,14 +372,14 @@ format_theta_output <- function(theta) {
                                     tidyr::unite(col="names_mu", variable, component) %>% dplyr::pull(names_mu))
 
   names_sigma <- c()
-  for (j in 1:k) {
-    for(i in 1:dim_gaussian) {
-      for (l in i:dim_gaussian) {
-        names_sigma <- c(names_sigma, glue::glue("sd_var{l}_var{i}_comp{j}"))
+  for(i in 1:dim_gaussian) {
+    for (l in i:dim_gaussian) {
+      for (j in 1:k) {
+      names_sigma <- c(names_sigma, glue::glue("sd_var{l}_var{i}_comp{j}"))
       }
     }
   }
-  formatted_sigma <- stats::setNames(sigma %>% array_to_trig_mat(transposed = F) %>% as.vector(), names_sigma)
+  formatted_sigma <- stats::setNames(sigma %>% array_to_trig_mat(transposed = T) %>% as.vector(), names_sigma)
   return(c(formatted_p, formatted_mu, formatted_sigma))
   }
 }
@@ -396,9 +395,9 @@ k <- stringr::str_detect(names_theta, "^p[[:digit:]]+$") %>% sum()
 if (any(grepl("sd", names_theta))) { # multivariate setting
   dim_gaussian <- stringr::str_detect(names_theta, "mu") %>% sum() / k
   # deal with mean vector
-  theta$mu <- matrix(formatted_theta[stringr::str_detect(names_theta, "mu")] %>% unlist(), nrow=dim_gaussian, ncol=k)
+  theta$mu <- matrix(formatted_theta[stringr::str_detect(names_theta, "mu")] %>% unlist(), nrow=dim_gaussian, ncol=k, byrow = T)
   # deal with sigma
-  theta$sigma <- matrix(formatted_theta[stringr::str_detect(names_theta, "sd")] %>% unlist(), nrow=k, byrow = T) %>% trig_mat_to_array()
+  theta$sigma <- matrix(formatted_theta[stringr::str_detect(names_theta, "sd")] %>% unlist(), nrow=k) %>% trig_mat_to_array()
 }
 else { # univariate setting
   # deal with mean vector

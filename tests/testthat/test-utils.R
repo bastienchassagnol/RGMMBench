@@ -57,11 +57,6 @@ test_that("Control output of the EM algorithm", {
 test_that ("Simplify theta output", {
   list_theta <- list(p=c(0.5, 0.5),
                      mu=matrix(c(20, 40, 30, 40, 20, 50), nrow = 3),
-                     sigma=array(rep(c(1, 0.2, 0.5, 0.2, 1, 0.8, 0.5, 0.8, 1), 2), dim=c(3, 3, 2)))
-
-  # list_theta <- list(p=c(0.5, 0.5),
-  #                    mu=matrix(c(20, 40, 50, 60), nrow = 2),
-  #                    sigma=array(c(1, 0.2, 0.2, 1, 1, 0.8, 0.8,  1), dim=c(2, 2, 2)))
-
-  formatted_theta <- format_theta_output(list_theta)
+                     sigma=array(c(1, 0.2, 0.5, 0.2, 1, 0.8, 0.5, 0.8, 1, 1, -0.2, -0.5, -0.2, 3, -0.8, -0.5, -0.8, 5), dim=c(3, 3, 2)))
+  expect_equal(format_theta_output(list_theta) %>% unformat_theta_output(), list_theta)
 })
