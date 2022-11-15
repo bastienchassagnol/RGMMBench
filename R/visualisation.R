@@ -56,11 +56,11 @@ plot_boxplots_parameters <- function(distribution_parameters, true_theta, remove
     scale_fill_viridis_d() +
     geom_hline(data = true_theta_df, aes(yintercept = true_value), col = "red", linetype = "dashed", size = 0.8)
 
-  if (require("ggtext"))
-    boxplot_parameters <- boxplot_parameters + theme(axis.text.x = ggtext::element_markdown(angle = 90, size = 12))
+  if (rlang::is_installed("ggtext")) {
+    boxplot_parameters <- boxplot_parameters + theme(axis.text.x = ggtext::element_markdown(angle = 90, size = 12, hjust=0.5, vjust = 0.4))}
   else {
     message("For the best formatting of packages labels, please install the ggtext if possible.")
-    boxplot_parameters <- boxplot_parameters + theme(axis.text.x = element_text(angle = 90, size = 12))
+    boxplot_parameters <- boxplot_parameters + theme(axis.text.x = element_text(angle = 90, size = 12, hjust=0.5, vjust = 0.4))
   }
 
   boxplot_parameters <- egg::tag_facet(boxplot_parameters,
@@ -205,24 +205,25 @@ plot_Hellinger <- function(distribution_parameters, true_theta, num_col=length(t
                                                   y = hellinger_value, fill = initialisation_method)) +
     geom_boxplot(outlier.shape = 16, outlier.size = 0.5, position = position_dodge(width = 0.9), width = 0.4) +
     stat_summary(fun = mean, geom = "point", shape = 3, size = 1, colour = "red",
-      position = position_dodge(width = 0.9), show.legend = FALSE) +
+                 position = position_dodge(width = 0.9), show.legend = FALSE) +
     facet_wrap(~component, ncol = num_col) +
     theme_bw() +
     theme(legend.position = "bottom",
-      axis.ticks.length = unit(.1, "cm"),
-      legend.text = element_text(size = 25),
-      plot.title = element_blank(),
-      plot.subtitle = element_blank(),
-      axis.title.y = element_blank(),
-      title = element_blank(),
-      panel.spacing = unit(.2, "pt")) +
-    scale_fill_viridis_d()
+          strip.text = element_text(size = 18),
+          axis.ticks.length = unit(.1, "cm"),
+          legend.text = element_text(size = 25),
+          panel.spacing = unit(.2, "pt"),
+          legend.title = element_blank(),
+          axis.title.y = element_text(size=15),
+          axis.title.x = element_blank(), plot.title = element_blank(), plot.subtitle = element_blank()) +
+    scale_fill_viridis_d() +
+    ylab("Hellinger distance")
 
-  if (require("ggtext"))
-    boxplot_Hellinger <- boxplot_Hellinger + theme(axis.text.x = ggtext::element_markdown(angle = 90, size = 12))
+  if (rlang::is_installed("ggtext"))
+    boxplot_Hellinger <- boxplot_Hellinger + theme(axis.text.x = ggtext::element_markdown(angle = 90, size = 12, hjust=0.5, vjust = 0.4))
   else {
     message("For the best formatting of packages labels, please install the ggtext if possible.")
-    boxplot_Hellinger <- boxplot_Hellinger + theme(axis.text.x = element_text(angle = 90, size = 12))
+    boxplot_Hellinger <- boxplot_Hellinger + theme(axis.text.x = element_text(angle = 90, size = 12, hjust=0.5, vjust = 0.4))
   }
   return(boxplot_Hellinger)
 }
