@@ -2,3 +2,7 @@
 ^\.Rproj\.user$
 ^LICENSE\.md$
 images
+errors
+results
+tests/testthat/results
+tests/testthat/errors

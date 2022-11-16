@@ -162,6 +162,47 @@ is_positive_definite <- function(sigma, tol=1e-6) {
   return(all(eigen_values >= -tol))
 }
 
+#' Conversion of unit times from the microbenchmark package
+#'
+#' @param x a mbm object
+#' @param unit unit of time
+#'
+#' @return a boolean, whether or not the matrix can be considered
+#' positive definite or not
+
+convert_to_unit <- function (x, unit = c("ns", "us", "ms", "s", "t", "hz", "khz",
+                                         "mhz", "eps", "f")) {
+  unit <- match.arg(unit)
+  switch(unit, t = unit <- sprintf("%ss", microbenchmark::find_prefix(x * 1e-09,
+                                                      minexp = -9, maxexp = 0, mu = FALSE)),
+         f = unit <- sprintf("%shz", microbenchmark::find_prefix(1e+09/x, minexp = 0, maxexp = 6, mu = FALSE)))
+  unit <- tolower(unit)
+  switch(unit, ns = {
+    attr(x, "unit") <- "nanoseconds"
+    unclass(x)
+  }, us = {
+    attr(x, "unit") <- "microseconds"
+    unclass(x/1000)
+  }, ms = {
+    attr(x, "unit") <- "milliseconds"
+    unclass(x/1e+06)
+  }, s = {
+    attr(x, "unit") <- "seconds"
+    unclass(x/1e+09)
+  }, eps = {
+    attr(x, "unit") <- "evaluations per second"
+    unclass(1e+09/x)
+  }, hz = {
+    attr(x, "unit") <- "hertz"
+    unclass(1e+09/x)
+  }, khz = {
+    attr(x, "unit") <- "kilohertz"
+    unclass(1e+06/x)
+  }, mhz = {
+    attr(x, "unit") <- "megahertz"
+    unclass(1000/x)
+  }, stop("Unknown unit '", unit, "'."))}
+
 #' Convert vector to symmetric matrix
 #'
 #' Reverse operation of \code{upper.tri} or \code{lower.tri}. Given a vector of
@@ -186,10 +227,10 @@ is_positive_definite <- function(sigma, tol=1e-6) {
 #' @examples
 #' x <- c(1,1,1,2,2,3)
 #' check <- matrix(c(1,1,1,1,1,1,2,2,1,2,1,3,1,2,3,1),4,4)
-#' identical(vec2sym(x,diag=1,lower=T,byrow=F), check)
+#' identical(vec2sym(x,diag=1,lower=TRUE,byrow=FALSE), check)
 #' x <- c(1,1,1,2,2,3)
 #' check <- matrix(c(1,1,1,1,2,2,1,2,3),3,3)
-#' identical(vec2sym(x,lower=T,byrow=F),check)
+#' identical(vec2sym(x,lower=TRUE,byrow=FALSE),check)
 #' @author patr1ckm
 #' @export
 vec2sym <- function(x,diagonal=NULL,lower=TRUE,byrow=FALSE){

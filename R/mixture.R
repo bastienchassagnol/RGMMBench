@@ -259,7 +259,6 @@ initialize_em_multivariate <- function(x, k = 2, nstart = 10L, short_iter = 200,
       # an ad-hoc technics, adding artificially noisy probability on each cluster assignment
       warning(glue::glue("The hc algorithm returns a clustering with only one component,
                          with initial distribution."))
-      assign("failed_hc_counter", value = failed_hc_counter + 1, envir = baseenv()) # increment counter
       saveRDS(list("distribution"=x, "k"=k),glue::glue("./errors/hc_clustering_number_{failed_hc_counter}.rds"))
       z <- mclust::unmap(s) # a n * k table, acting as indicator of belonging for each cluster
       z[z == 1] <- 1 - prior_prob * (k - 1); z[z == 0] <- prior_prob # non-assigned class get by default a minimal probability value
@@ -316,11 +315,6 @@ initialize_em_multivariate <- function(x, k = 2, nstart = 10L, short_iter = 200,
   # stop in case of bad implementation
   if (!check_parameters_validity_multivariate(ordered_estimated_theta)) {
     dir.create("./errors/initialisation_failures", showWarnings = F, recursive = T)
-    if(!exists("init_error_count", where = globalenv()))
-      assign("init_error_count", 1, pos=globalenv())
-    else {
-      assign("init_error_count", get("init_error_count", pos=globalenv()) + 1, pos=globalenv()) # set a counter for each error
-    }
     saveRDS(object = list(x=x, algo=initialisation_algorithm),
             file = glue::glue("./errors/initialisation_failures/init_algo_{initialisation_algorithm}_error_{init_error_count}.rds"))
     stop("Parameters learnt from the initiation algorithm are inconsistent with the number of clusters required,

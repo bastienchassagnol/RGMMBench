@@ -49,9 +49,9 @@ test_that("multivariate visualisation", {
 #
 
 
-multivariate_distribution_parameters <- readRDS("../mixture_models/results/multivariate/bivariate_distributions.rds") %>%
-  dplyr::group_by(ID, package, initialisation_method) %>%
-  dplyr::mutate(N.bootstrap=dplyr::row_number()) %>% dplyr::ungroup()
+# multivariate_distribution_parameters <- readRDS("../mixture_models/results/multivariate/bivariate_distributions.rds") %>%
+#   dplyr::group_by(ID, package, initialisation_method) %>%
+#   dplyr::mutate(N.bootstrap=dplyr::row_number()) %>% dplyr::ungroup()
 
 # multivariate_distribution_parameters <- multivariate_distribution_parameters %>%
 #   dplyr::relocate(sd_var1_var1_comp2, .after=sd_var1_var1_comp1) %>%
@@ -60,22 +60,22 @@ multivariate_distribution_parameters <- readRDS("../mixture_models/results/multi
 #
 # saveRDS(multivariate_distribution_parameters, "../mixture_models/results/multivariate/bivariate_distributions.rds")
 
-multivariate_configuration <- readRDS("../mixture_models/results/multivariate/bivariate_configuration_scenario.rds")
-
-liste_multivariate_plots <- purrr::map(multivariate_configuration %>% pull(ID), function(ID_index) {
-  true_theta <- multivariate_configuration %>% filter(ID==ID_index) %>%
-    pull(true_parameters) %>% magrittr::extract2(1)
-
-  boxplot <- RGMMBench::plot_boxplots_parameters(multivariate_distribution_parameters %>% filter(ID==ID_index), true_theta = true_theta)
-  hellinger <- RGMMBench::plot_Hellinger(multivariate_distribution_parameters %>% filter(ID==ID_index), true_theta = true_theta)
-  density <- RGMMBench::plot_bivariate_normal_density_distribution(true_theta = true_theta, nobservations = 2000)
-  intervals <- RGMMBench::plot_ellipses_bivariate(multivariate_distribution_parameters %>% filter(ID==ID_index), true_theta = true_theta, npoints = 2000)
-  general_plot <- gridExtra::arrangeGrob(grobs=list(density, intervals, hellinger, boxplot), nrow = 2, ncol = 2, top = paste0("ID is ", ID_index))
-  return(general_plot)
-})
-
-ggsave("./images/general_plots_summary.pdf",
-       gridExtra::marrangeGrob(grobs = liste_multivariate_plots, ncol = 1, nrow = 1, top=NULL), width = 20, height = 30 )
+# multivariate_configuration <- readRDS("../mixture_models/results/multivariate/bivariate_configuration_scenario.rds")
+#
+# liste_multivariate_plots <- purrr::map(multivariate_configuration %>% pull(ID), function(ID_index) {
+#   true_theta <- multivariate_configuration %>% filter(ID==ID_index) %>%
+#     pull(true_parameters) %>% magrittr::extract2(1)
+#
+#   boxplot <- RGMMBench::plot_boxplots_parameters(multivariate_distribution_parameters %>% filter(ID==ID_index), true_theta = true_theta)
+#   hellinger <- RGMMBench::plot_Hellinger(multivariate_distribution_parameters %>% filter(ID==ID_index), true_theta = true_theta)
+#   density <- RGMMBench::plot_bivariate_normal_density_distribution(true_theta = true_theta, nobservations = 2000)
+#   intervals <- RGMMBench::plot_ellipses_bivariate(multivariate_distribution_parameters %>% filter(ID==ID_index), true_theta = true_theta, npoints = 2000)
+#   general_plot <- gridExtra::arrangeGrob(grobs=list(density, intervals, hellinger, boxplot), nrow = 2, ncol = 2, top = paste0("ID is ", ID_index))
+#   return(general_plot)
+# })
+#
+# ggsave("./images/general_plots_summary.pdf",
+#        gridExtra::marrangeGrob(grobs = liste_multivariate_plots, ncol = 1, nrow = 1, top=NULL), width = 20, height = 30 )
 
 
 
