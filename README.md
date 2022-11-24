@@ -79,7 +79,7 @@ performances of the packages, and one representing the boxplots of the bootstrap
 
 ArXiv publication associated with the paper:
 
-- Chassagnol et al. (2021). [Gaussian mixtures in R](https://doi.org/10.1007/s11192-020-03690-4), *The R journal*
+- Chassagnol et al. (2021). Gaussian mixtures in R, *under review*
 - Scrucca et al. (2016). [mclust 5: Clustering, Classification and Density Estimation Using Gaussian Finite Mixture Models], *The R journal*
 
 ## Acknowledgments
