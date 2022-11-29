@@ -9,7 +9,7 @@ Description: This repository contains the code used to generate
     mixtures in R".
 License: MIT + file LICENSE
 Depends: 
-    R (>= 4.0.2)
+    R (>= 4.0.0)
 Imports: 
     bgmm,
     ComplexHeatmap,
@@ -28,23 +28,24 @@ Imports:
     methods,
     microbenchmark,
     MixSim,
-    mixsmsn,
     mixtools,
     mvtnorm,
-    otrimle,
     parallel,
     purrr,
     rebmix,
     rlang,
     Rmixmod,
-    sn,
     stats,
     stringr,
     tibble,
     tidyr,
     viridis
 Suggests: 
+    ggforce,
+    ggnewscale,
+    ggtext,
     knitr,
+    otrimle,
     rmarkdown,
     testthat (>= 3.0.0),
     vdiffr

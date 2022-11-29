@@ -5,9 +5,14 @@
 \alias{check_parameters_validity_multivariate}
 \title{Check whether the estimation has been trapped in the boundary space}
 \usage{
-check_parameters_validity_univariate(theta, k = 2)
+check_parameters_validity_univariate(theta, k = length(theta$p))
 
 check_parameters_validity_multivariate(theta, k = length(theta$p))
+}
+\arguments{
+\item{theta}{the set of parameters defining GMMs, with three inputs, namely p, mu and sigma}
+
+\item{k}{the number of components, by default the number of proportions indicated in vector p}
 }
 \description{
 \itemize{

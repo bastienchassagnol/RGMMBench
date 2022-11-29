@@ -45,6 +45,8 @@ compute_microbenchmark_multivariate(
 
 \item{sigma_values, mean_values, proportions}{the true parameters to be retrieved}
 
+\item{cores}{the number of cores to be used, by default all the available cores}
+
 \item{prop_outliers}{the proportion of outliers added in the simulation}
 
 \item{nobservations}{the number of observations drawn to generate the random sample}

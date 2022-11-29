@@ -1,3 +1,15 @@
+chk <- Sys.getenv("_R_CHECK_LIMIT_CORES_", "")
+if (nzchar(chk) && chk == "TRUE") {
+  # use 2 cores in CRAN/Travis/AppVeyor
+  num_cores <- 2L
+} else {
+  # use all cores in devtools::test()
+  num_cores <- parallel::detectCores()
+}
+library(dplyr)
+
+
+
 test_that("univariate benchmark", {
   RNGkind("L'Ecuyer-CMRG")
   set.seed(20)
@@ -9,18 +21,22 @@ test_that("univariate benchmark", {
     "mclust" = list(name_fonction = em_mclust_univariate, list_params = list(prior = NULL)),
     "EMCluster" = list(name_fonction = em_EMCluster_univariate, list_params = list()),
     "GMKMcharlie" = list(name_fonction = em_GMKMcharlie_univariate, list_params = list()),
-    "flexmix" = list(name_fonction = em_flexmix_univariate, list_params = list()))
+    "flexmix" = list(name_fonction = em_flexmix_univariate, list_params = list())
+  )
 
-  test_parameters_distribution <- benchmark_univariate_GMM_estimation(mixture_functions=relevant_mixture_functions[2],
-                                                                      initialisation_algorithms = c("kmeans"),
-                                                                      sigma_values=list("low OVL"= rep(0.3, 2)),
-                                                                      mean_values=list(c(0, 4)),
-                                                                      proportions = list("small imbalanced"=c(0.8, 0.2)),
-                                                                      prop_outliers = c(0),
-                                                                      Nbootstrap=5,  nobservations=c(100))
+  univariate_distribution_parameters <- benchmark_univariate_GMM_estimation(
+    mixture_functions = relevant_mixture_functions[2],
+    initialisation_algorithms = c("kmeans"),
+    sigma_values = list("low OVL" = rep(0.3, 2)),
+    mean_values = list(c(0, 4)),
+    proportions = list("small imbalanced" = c(0.8, 0.2)),
+    prop_outliers = c(0), cores = num_cores,
+    Nbootstrap = 2, nobservations = c(100)
+  )
 
-  # saveRDS(test_parameters_distribution,
-  #         file.path("./results", "univariate_test_distribution.rds"))
+  # saveRDS(univariate_distribution_parameters,
+  #         test_path("results", "univariate_test_distribution.rds"))
+  expect_equal(univariate_distribution_parameters, readRDS(test_path("results", "univariate_test_distribution.rds")))
 })
 
 
@@ -36,7 +52,8 @@ test_that("multivariate benchmark", {
     "mclust" = list(name_fonction = em_mclust_multivariate, list_params = list(prior = NULL)),
     "EMCluster" = list(name_fonction = em_EMCluster_multivariate, list_params = list()),
     "GMKMcharlie" = list(name_fonction = em_GMKMcharlie_multivariate, list_params = list()),
-    "flexmix" = list(name_fonction = em_flexmix_multivariate, list_params = list()))
+    "flexmix" = list(name_fonction = em_flexmix_multivariate, list_params = list())
+  )
 
 
   corr_sequence <- seq(-0.8, 0.8, 0.2)
@@ -48,22 +65,26 @@ test_that("multivariate benchmark", {
     }
   }
 
-  test_parameters_distribution <- benchmark_multivariate_GMM_estimation(
+  multivariate_distribution_parameters <- benchmark_multivariate_GMM_estimation(
     mixture_functions = relevant_mixture_functions[2:3],
-    initialisation_algorithms = c("kmeans"),
+    initialisation_algorithms = c("kmeans"), cores = num_cores,
     sigma_values = sigma_values[1:2],
-    mean_values = list("small OVL"=matrix(c(0, 2, 2, 0), nrow = 2, ncol = 2)),
-    proportions = list("balanced"=c(0.5, 0.5)),
-    Nbootstrap = 4, nobservations = c(100))
+    mean_values = list("small OVL" = matrix(c(0, 2, 2, 0), nrow = 2, ncol = 2)),
+    proportions = list("balanced" = c(0.5, 0.5)),
+    Nbootstrap = 4, nobservations = c(100)
+  )
 
-  # saveRDS(test_parameters_distribution,
-  #         file.path("./results", "multivariate_test_distribution.rds"))
+  # saveRDS(multivariate_distribution_parameters,
+  #         test_path("results", "multivariate_test_distribution.rds"))
+  original_dist <- readRDS(test_path("results", "multivariate_test_distribution.rds"))
+  expect_equal(multivariate_distribution_parameters, original_dist)
 })
 
 
 
 
 test_that("computation time in multivariate", {
+  skip_on_cran()
   RNGkind("L'Ecuyer-CMRG")
   set.seed(20)
   relevant_mixture_functions <- list(
@@ -74,7 +95,8 @@ test_that("computation time in multivariate", {
     "mclust" = list(name_fonction = em_mclust_multivariate, list_params = list(prior = NULL)),
     "EMCluster" = list(name_fonction = em_EMCluster_multivariate, list_params = list()),
     "GMKMcharlie" = list(name_fonction = em_GMKMcharlie_multivariate, list_params = list()),
-    "flexmix" = list(name_fonction = em_flexmix_multivariate, list_params = list()))
+    "flexmix" = list(name_fonction = em_flexmix_multivariate, list_params = list())
+  )
 
 
   corr_sequence <- seq(-0.8, 0.8, 0.2)
@@ -86,19 +108,22 @@ test_that("computation time in multivariate", {
     }
   }
 
-  test_parameters_distribution <- compute_microbenchmark_multivariate(
+  multivariate_time_computations <- compute_microbenchmark_multivariate(
     mixture_functions = relevant_mixture_functions[2:3],
     initialisation_algorithms = c("kmeans"),
     sigma_values = sigma_values[1:2],
-    mean_values = list("small OVL"=matrix(c(0, 2, 2, 0), nrow = 2, ncol = 2)),
-    proportions = list("balanced"=c(0.5, 0.5)),
-    Nbootstrap = 4, nobservations = c(100, 200, 500))
+    mean_values = list("small OVL" = matrix(c(0, 2, 2, 0), nrow = 2, ncol = 2)),
+    proportions = list("balanced" = c(0.5, 0.5)),
+    Nbootstrap = 4, nobservations = c(100, 200, 500), cores = num_cores
+  )
 
-  # saveRDS(test_parameters_distribution,
-  #         file.path("./results", "multivariate_test_time_computations.rds"))
+  # saveRDS(multivariate_time_computations,
+  #         test_path("results", "multivariate_test_time.rds"))
+  # expect_equal(multivariate_time_computations, readRDS(test_path("results", "multivariate_test_time.rds")))
 })
 
 test_that("univariate time computation", {
+  skip_on_cran()
   RNGkind("L'Ecuyer-CMRG")
   set.seed(20)
   relevant_mixture_functions <- list(
@@ -109,20 +134,23 @@ test_that("univariate time computation", {
     "mclust" = list(name_fonction = em_mclust_univariate, list_params = list(prior = NULL)),
     "EMCluster" = list(name_fonction = em_EMCluster_univariate, list_params = list()),
     "GMKMcharlie" = list(name_fonction = em_GMKMcharlie_univariate, list_params = list()),
-    "flexmix" = list(name_fonction = em_flexmix_univariate, list_params = list()))
+    "flexmix" = list(name_fonction = em_flexmix_univariate, list_params = list())
+  )
 
-  test_parameters_distribution <- compute_microbenchmark_univariate(mixture_functions=relevant_mixture_functions[2:3],
-                                                                      initialisation_algorithms = c("kmeans", "quantiles"),
-                                                                      sigma_values=list("low OVL"= rep(0.3, 2)),
-                                                                      mean_values=list(c(0, 4)),
-                                                                      proportions = list( "balanced"=c(0.5, 0.5),
-                                                                                          "small imbalanced"=c(0.8, 0.2)),
-                                                                      prop_outliers = c(0),
-                                                                      Nbootstrap=5,  nobservations=c(100, 200))
+  univariate_time_computations <- compute_microbenchmark_univariate(
+    mixture_functions = relevant_mixture_functions[2:3],
+    initialisation_algorithms = c("kmeans"),
+    sigma_values = list("low OVL" = rep(0.3, 2)),
+    mean_values = list(c(0, 4)),
+    proportions = list(
+      "balanced" = c(0.5, 0.5),
+      "small imbalanced" = c(0.8, 0.2)
+    ),
+    prop_outliers = c(0), cores = num_cores,
+    Nbootstrap = 4, nobservations = c(100, 200)
+  )
 
-  # saveRDS(test_parameters_distribution,
-  #         file.path("./results", "univariate_test_time_computations.rds"))
+  # saveRDS(univariate_time_computations,
+  #         test_path("results", "univariate_test_time.rds"))
+  expect_equal(univariate_time_computations, readRDS(test_path("results", "univariate_test_time.rds")))
 })
-
-
-

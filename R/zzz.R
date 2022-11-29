@@ -1,46 +1,44 @@
-#' Plot the running time of the initialisation methods
-#'
-#' @author Bastien CHASSAGNOL
-#'
-#' @param init_time_data the running time data
-#'
-#' @return initialisation_time_plots a ggplot object representing the running time curve distributions of the initialisation packages
-#'
-#' @export
 
-plot_initialisation_time_computations <- function(init_time_data) {
+# em_mixsmsn <- function(x = x, k = 2, initialisation_algorithm = "hc", skew = rep(0, k),
+#                        itmax = 5000, epsilon = 10^-12, start = NULL, ...) {
+#   if (is.null(start)) {
+#     start <- initialize_em_univariate(
+#       x = x, k = k, nstart = 10L, itmax = 200, epsilon = 10^-2,
+#       initialisation_algorithm = initialisation_algorithm, ...
+#     )
+#   }
+#
+#   # nu is the kurtosis, always equal to 3 for a classic Gaussian distribution(not skewed)
+#   if (all(skew == 0)) {
+#     # fit a classic Gaussian distribution
+#     fit <- mixsmsn::smsn.mix(
+#       y = x, nu = 3,
+#       mu = start$mu, sigma2 = start$sigma^2, shape = skew, pii = start$p,
+#       g = 2, get.init = FALSE, criteria = FALSE, group = FALSE, family = "Normal",
+#       error = 10^-12, iter.max = 5000, calc.im = FALSE
+#     )
+#   } else {
+#     # fit a skewed distribution
+#     fit <- mixsmsn::smsn.mix(
+#       y = x, nu = 3,
+#       mu = start$mu, sigma2 = start$sigma, shape = skew, pii = start$p,
+#       g = 2, get.init = FALSE, criteria = FALSE, group = FALSE, family = "Skew.normal",
+#       error = 10^-12, iter.max = 5000, calc.im = FALSE
+#     )
+#   }
+#
+#
+#   # return an ordered list by mean values
+#   ordered_estimated_theta <- list(
+#     p = fit$pii[order(fit$mu)],
+#     mu = sort(fit$mu),
+#     sigma = sqrt(fit$sigma2[order(fit$mu)])
+#   )
+#
+#   ordered_estimated_theta <- ordered_estimated_theta %>% purrr::map(unname)
+#   return(ordered_estimated_theta)
+# }
 
-  # get quantiles of the distribution
-  init_time_data_summary <- init_time_data %>%
-    dplyr::arrange(dplyr::desc(entropy), OVL) %>%
-    dplyr::mutate(
-      OVL = factor(OVL, labels = paste("Balanced OVL:", unique(OVL)), levels = unique(sort(OVL))),
-      entropy = factor(entropy, labels = paste("Entropy:", unique(entropy)), levels = unique(sort(entropy, decreasing = TRUE)))
-    ) %>%
-    dplyr::group_by(
-      OVL, entropy, nobservations, prop_outliers,
-      skew, initialisation_method
-    ) %>%
-    dplyr::summarise(time_median = log10(median(time)), time_up = log10(quantile(time, probs = 0.95)), time_down = log10(quantile(time, probs = 0.05))) # use of log10 scale for computation purposes
-
-  # plot quantiles of initialization time distribution
-  initialisation_time_plots <- ggplot(init_time_data_summary, aes(
-    x = nobservations, y = time_median, col = initialisation_method,
-    linetype = initialisation_method, shape = initialisation_method
-  )) +
-    geom_point(size = 3) +
-    geom_line(aes(y = time_median), size = 1.15) +
-    geom_ribbon(alpha = 0.2, aes(ymin = time_down, ymax = time_up, fill = initialisation_method), colour = NA) +
-    facet_grid(OVL ~ factor(entropy, levels = rev(unique(entropy)))) +
-    theme_bw() +
-    theme(
-      legend.position = "bottom", legend.title = element_blank(),
-      plot.title = element_blank(), legend.text = element_text(size = 14), axis.title = element_text(size = 12)
-    ) +
-    scale_shape_manual(values = c(1:length(unique(init_time_data_summary$initialisation_method)))) +
-    labs(x = "Number of observations (log10)", y = "Time in seconds (log10)")
-  return(initialisation_time_plots)
-}
 
 
 # if (with_outliers)

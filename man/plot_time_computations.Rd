@@ -8,8 +8,6 @@ plot_time_computations(time_data)
 }
 \arguments{
 \item{time_data}{the running time data associated to the EM estimation performed by the reviewed packages}
-
-\item{grouping_colnames}{the names of the column, to establish the facets}
 }
 \value{
 time_plots a ggplot object representing the running time curve distributions of the reviewed packages

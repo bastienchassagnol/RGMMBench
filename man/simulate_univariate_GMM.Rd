@@ -26,6 +26,9 @@ whose diagonal terms correspond to the variance of each variable, and off-terms 
 }}
 
 \item{n}{the number of observations to be drawn}
+
+\item{prop_outliers, interval}{first argument is the proportion of outliers, drawn from an uniform distribution whose
+intervals are defined by the second argument twice the distance between the 0.05 and 0.95 quantile of the distribution}
 }
 \value{
 Depending on the univariate or multivariate context:

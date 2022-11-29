@@ -14,7 +14,7 @@ compute_overlap_roots <- function(p1, p2, mu1, mu2, sigma1, sigma2) {
   # heteroscedastic case, existence of two intersections points
   # conditioned on the proportions
   else if ((sigma2 > sigma1 & p1 > (sigma1 / (sigma1 + sigma2))) |
-           (sigma2 < sigma1 & p1 < (sigma1 / (sigma1 + sigma2)))) {
+    (sigma2 < sigma1 & p1 < (sigma1 / (sigma1 + sigma2)))) {
     variant_part <- sigma1 * sigma2 * sqrt((mu1 - mu2)^2 + 2 * (sigma2^2 - sigma1^2) * (log(p1 / p2) + log(sigma2 / sigma1)))
     return(c(
       (sigma1^2 * mu2 - sigma2^2 * mu1 - variant_part) / (sigma1^2 - sigma2^2),
@@ -41,17 +41,20 @@ compute_overlap_roots <- function(p1, p2, mu1, mu2, sigma1, sigma2) {
 #' @export
 
 
-compute_average_overlap <- function (true_theta, k=length(true_theta$p)) {
+compute_average_overlap <- function(true_theta, k = length(true_theta$p)) {
   # generate relevant values for the computation of the overlap
-  misclassif_mat <- MixSim::overlap(Pi = true_theta$p,
-                                    Mu = as.matrix(true_theta$mu),
-                                    S = as.matrix(true_theta$sigma))$OmegaMap
-  pairwise_overlap <- c(); p <- true_theta$p
+  misclassif_mat <- MixSim::overlap(
+    Pi = true_theta$p,
+    Mu = as.matrix(true_theta$mu),
+    S = as.matrix(true_theta$sigma)
+  )$OmegaMap
+  pairwise_overlap <- c()
+  p <- true_theta$p
 
   # generate the average of pairwise overlaps
-  for (i in 1:(k-1)) {
-    for (j in (i+1):k) {
-      pairwise_overlap <- c(pairwise_overlap,misclassif_mat[i,j] * p[i] + misclassif_mat[j,i] * p[j])
+  for (i in 1:(k - 1)) {
+    for (j in (i + 1):k) {
+      pairwise_overlap <- c(pairwise_overlap, misclassif_mat[i, j] * p[i] + misclassif_mat[j, i] * p[j])
     }
   }
   return(mean(pairwise_overlap))
@@ -70,21 +73,24 @@ compute_average_overlap <- function (true_theta, k=length(true_theta$p)) {
 #' @return a tibble with `n` points associated to x and y locations associated to the `1-alpha` confidence interval
 
 
-generate_ellipse <- function (theta, alpha = 0.05, npoints = 500) {
+generate_ellipse <- function(theta, alpha = 0.05, npoints = 500) {
 
-# control input
-mu <- theta$mu %>% as.vector(); sigma <- theta$sigma
-if(!is.matrix(sigma))
-  sigma <- sigma[,,1]
+  # control input
+  mu <- theta$mu %>% as.vector()
+  sigma <- theta$sigma
+  if (!is.matrix(sigma)) {
+    sigma <- sigma[, , 1]
+  }
 
 
-es <- eigen(sigma)
-e1 <- es$vec %*% diag(sqrt(es$val))
-r1 <- sqrt(qchisq(1 - alpha, 2))
-theta <- seq(0, 2 * pi, len = npoints)
-v1 <- cbind(r1 * cos(theta), r1 * sin(theta))
-pts <- t(mu - (e1 %*% t(v1))); colnames(pts) <- c("x", "y")
-return(pts %>% tibble::as_tibble())
+  es <- eigen(sigma)
+  e1 <- es$vec %*% diag(sqrt(es$val))
+  r1 <- sqrt(stats::qchisq(1 - alpha, 2))
+  theta <- seq(0, 2 * pi, len = npoints)
+  v1 <- cbind(r1 * cos(theta), r1 * sin(theta))
+  pts <- t(mu - (e1 %*% t(v1)))
+  colnames(pts) <- c("x", "y")
+  return(pts %>% tibble::as_tibble())
 }
 
 
@@ -112,6 +118,8 @@ get_local_scores <- function(estimated_theta, true_theta) {
 }
 
 #' The Maha distance
+#'
+#' @param mu,sigma mean and covariance matrix of the distribution to which we have to compute the Mahalanobis distance
 maha <- function(mu, sigma) {
   inv.sigma <- solve(sigma)
   d <- t(mu) %*% inv.sigma %*% mu
@@ -144,8 +152,8 @@ compute_shannon_entropy <- function(ratios) {
 
 #' Check the positive definiteness of a symmetric real matrix
 #'
-#'To do so, we compute the eigen values of the corresponding matrix with `eigen` function,
-#'and if all of them are positive above a given threshold, then we return true.
+#' To do so, we compute the eigen values of the corresponding matrix with `eigen` function,
+#' and if all of them are positive above a given threshold, then we return true.
 #' @author Bastien CHASSAGNOL
 #'
 #' @param sigma a symmetric matrix with real values
@@ -157,51 +165,83 @@ compute_shannon_entropy <- function(ratios) {
 #' @export
 #'
 
-is_positive_definite <- function(sigma, tol=1e-6) {
+is_positive_definite <- function(sigma, tol = 1e-6) {
   eigen_values <- eigen(sigma, symmetric = TRUE)$values
   return(all(eigen_values >= -tol))
 }
 
-#' Conversion of unit times from the microbenchmark package
-#'
-#' @param x a mbm object
-#' @param unit unit of time
-#'
-#' @return a boolean, whether or not the matrix can be considered
-#' positive definite or not
+#' @inherit microbenchmark:::convert_to_unit
 
-convert_to_unit <- function (x, unit = c("ns", "us", "ms", "s", "t", "hz", "khz",
-                                         "mhz", "eps", "f")) {
+convert_to_unit <- function(x, unit = c(
+                              "ns", "us", "ms", "s", "t", "hz", "khz",
+                              "mhz", "eps", "f"
+                            )) {
   unit <- match.arg(unit)
-  switch(unit, t = unit <- sprintf("%ss", microbenchmark::find_prefix(x * 1e-09,
-                                                      minexp = -9, maxexp = 0, mu = FALSE)),
-         f = unit <- sprintf("%shz", microbenchmark::find_prefix(1e+09/x, minexp = 0, maxexp = 6, mu = FALSE)))
+  switch(unit,
+    t = unit <- sprintf("%ss", find_prefix(x * 1e-09,
+      minexp = -9, maxexp = 0, mu = FALSE
+    )),
+    f = unit <- sprintf("%shz", find_prefix(1e+09 / x, minexp = 0, maxexp = 6, mu = FALSE))
+  )
   unit <- tolower(unit)
-  switch(unit, ns = {
-    attr(x, "unit") <- "nanoseconds"
-    unclass(x)
-  }, us = {
-    attr(x, "unit") <- "microseconds"
-    unclass(x/1000)
-  }, ms = {
-    attr(x, "unit") <- "milliseconds"
-    unclass(x/1e+06)
-  }, s = {
-    attr(x, "unit") <- "seconds"
-    unclass(x/1e+09)
-  }, eps = {
-    attr(x, "unit") <- "evaluations per second"
-    unclass(1e+09/x)
-  }, hz = {
-    attr(x, "unit") <- "hertz"
-    unclass(1e+09/x)
-  }, khz = {
-    attr(x, "unit") <- "kilohertz"
-    unclass(1e+06/x)
-  }, mhz = {
-    attr(x, "unit") <- "megahertz"
-    unclass(1000/x)
-  }, stop("Unknown unit '", unit, "'."))}
+  switch(unit,
+    ns = {
+      attr(x, "unit") <- "nanoseconds"
+      unclass(x)
+    },
+    us = {
+      attr(x, "unit") <- "microseconds"
+      unclass(x / 1000)
+    },
+    ms = {
+      attr(x, "unit") <- "milliseconds"
+      unclass(x / 1e+06)
+    },
+    s = {
+      attr(x, "unit") <- "seconds"
+      unclass(x / 1e+09)
+    },
+    eps = {
+      attr(x, "unit") <- "evaluations per second"
+      unclass(1e+09 / x)
+    },
+    hz = {
+      attr(x, "unit") <- "hertz"
+      unclass(1e+09 / x)
+    },
+    khz = {
+      attr(x, "unit") <- "kilohertz"
+      unclass(1e+06 / x)
+    },
+    mhz = {
+      attr(x, "unit") <- "megahertz"
+      unclass(1000 / x)
+    },
+    stop("Unknown unit '", unit, "'.")
+  )
+}
+
+
+#' @inherit microbenchmark:::find_prefix
+find_prefix <- function(x, f = min, minexp = -Inf, maxexp = Inf, mu = TRUE) {
+  prefixes <- c(
+    "y", "z", "a", "f", "p", "n", "u", "m", "",
+    "k", "M", "G", "T", "P", "E", "Z", "Y"
+  )
+  if (mu) {
+    prefixes[7] <- "mu"
+  }
+  if (is.numeric(minexp)) {
+    minexp <- floor(minexp / 3)
+  }
+  if (is.numeric(minexp)) {
+    maxexp <- floor(maxexp / 3)
+  }
+  e3 <- floor(log10(f(x)) / 3)
+  e3 <- max(e3, minexp, -8)
+  e3 <- min(e3, maxexp, 8)
+  prefixes[e3 + 9]
+}
 
 #' Convert vector to symmetric matrix
 #'
@@ -215,8 +255,7 @@ convert_to_unit <- function (x, unit = c("ns", "us", "ms", "s", "t", "hz", "khz"
 #' [Handy R functions](https://rdrr.io/github/patr1ckm/patr1ckm/man/vec2sym.html),
 #'  enabling to revert an `upper.tri` or `lower.tri` operation.
 #'
-#' @param x vector containing upper or lower triangular elements of a symmetric matrix
-#' @param If NULL, x contains diagonal elements. Otherwise a value or vector of the appropriate length to be placed on the diagonal.
+#' @param x vector containing upper or lower triangular elements of a symmetric matrix.
 #' @param lower x is from the lower triangle (default = \code{TRUE})
 #' @param byrow the elements in x are ordered row-wise (default = \code{FALSE})
 #' @return Symmetric matrix
@@ -225,42 +264,23 @@ convert_to_unit <- function (x, unit = c("ns", "us", "ms", "s", "t", "hz", "khz"
 #' x is a vector of the lower triangular elements given by row, this is equivalent
 #' to the upper triangular elements given by column.
 #' @examples
-#' x <- c(1,1,1,2,2,3)
-#' check <- matrix(c(1,1,1,1,1,1,2,2,1,2,1,3,1,2,3,1),4,4)
-#' identical(vec2sym(x,diag=1,lower=TRUE,byrow=FALSE), check)
-#' x <- c(1,1,1,2,2,3)
-#' check <- matrix(c(1,1,1,1,2,2,1,2,3),3,3)
-#' identical(vec2sym(x,lower=TRUE,byrow=FALSE),check)
+#' x <- c(1, 1, 1, 2, 2, 3)
+#' check <- matrix(c(1, 1, 1, 1, 2, 2, 1, 2, 3), 3, 3)
+#' identical(vec2sym(x, lower = TRUE, byrow = FALSE), check)
 #' @author patr1ckm
 #' @export
-vec2sym <- function(x,diagonal=NULL,lower=TRUE,byrow=FALSE){
-  if(is.null(diagonal)){
-    ## Assume that x contains the diagonal elements as well
-    p <- (sqrt(1 + 8 * length(x)) - 1)/2
-    S <- diag(p)
-    if((!lower & byrow) | (lower & !byrow)){
-      S[lower.tri(S,diag=T)] <- x
-      S[which(lower.tri(t(S),diag=T),arr.ind=T)[,c(2,1)]] <- x
-    }
-    if((lower & byrow) | (!lower & !byrow)) {
-      S[upper.tri(S,diag=T)] <- x
-      S[which(upper.tri(t(S),diag=T),arr.ind=T)[,c(2,1)]] <- x
-    }
-  } else{
-    ## diagonal elements are given by 'diagonal'
-    p <- (sqrt(1 + 8 * length(x)) + 1)/2
-    S <- diag(p)
-    if((!lower & byrow) | (lower & !byrow)){
-      S[lower.tri(S)] <- x
-      S[which(lower.tri(t(S)),arr.ind=T)[,c(2,1)]] <- x
-    }
-    if((lower & byrow) | (!lower & !byrow)) {
-      S[upper.tri(S)] <- x
-      S[which(upper.tri(t(S)),arr.ind=T)[,c(2,1)]] <- x
-    }
-    diag(S) <- diagonal
+vec2sym <- function(x, lower = TRUE, byrow = FALSE) {
+  ## Assume that x contains the diagonal elements as well
+  p <- (sqrt(1 + 8 * length(x)) - 1) / 2
+  S <- diag(p)
+  if ((!lower & byrow) | (lower & !byrow)) {
+    S[lower.tri(S, diag = T)] <- x
+    S[which(lower.tri(t(S), diag = T), arr.ind = T)[, c(2, 1)]] <- x
   }
-
+  if ((lower & byrow) | (!lower & !byrow)) {
+    S[upper.tri(S, diag = T)] <- x
+    S[which(upper.tri(t(S), diag = T), arr.ind = T)[, c(2, 1)]] <- x
+  }
   return(S)
 }
 
@@ -281,18 +301,21 @@ vec2sym <- function(x,diagonal=NULL,lower=TRUE,byrow=FALSE){
 #' on the third dimension, for each component
 #' @export
 
-trig_mat_to_array <- function(x, transposed=TRUE, ...) {
-
-  if (!transposed)
+trig_mat_to_array <- function(x, transposed = TRUE, ...) {
+  if (!transposed) {
     x <- t(x)
+  }
 
-  k <- nrow(x); dim_gaussian <- (sqrt(8 * ncol(x) + 1) - 1)/2
-  stopifnot("Dimension of the input must be a Pascal number (to have a triangular valid matrix)" =
-              is_integer(dim_gaussian))
-  sigma <- array(0, dim=c(dim_gaussian, dim_gaussian, k))
+  k <- nrow(x)
+  dim_gaussian <- (sqrt(8 * ncol(x) + 1) - 1) / 2
+  stopifnot(
+    "Dimension of the input must be a Pascal number (to have a triangular valid matrix)" =
+      is_integer(dim_gaussian)
+  )
+  sigma <- array(0, dim = c(dim_gaussian, dim_gaussian, k))
 
   for (j in 1:k) {
-      sigma[,,j] <- vec2sym(x[j,], ...)
+    sigma[, , j] <- vec2sym(x[j, ], ...)
   }
 
   return(sigma)
@@ -300,20 +323,26 @@ trig_mat_to_array <- function(x, transposed=TRUE, ...) {
 
 #' Convert an array of covariance matrices to short lower triangular format
 #'
+#' @param x an array, of dimensions \eqn{D \times D \times k},
+#' each column \eqn{j \in \{1, \ldots, k \}} describing the covariance matrix associated to component \eqn{j}
+#' @param transposed boolean, should we transpose the returned matrix
+#'
 #' @seealso [trig_mat_to_array()], which is the reciprocal operation
 #' @export
 
-array_to_trig_mat <- function(x, transposed=TRUE) {
-  k <- dim(x)[3]; dim_gaussian <- dim(x)[2]
-  dim_triangular <- ((dim_gaussian + 1) * dim_gaussian)/2
+array_to_trig_mat <- function(x, transposed = TRUE) {
+  k <- dim(x)[3]
+  dim_gaussian <- dim(x)[2]
+  dim_triangular <- ((dim_gaussian + 1) * dim_gaussian) / 2
 
   trig_matrix <- matrix(0, nrow = k, ncol = dim_triangular)
   for (j in 1:k) {
     # recover elements from the lower traingular part of the covariance matrix, left to right, up to bottom
-    trig_matrix[j, ] <- x[,,j][lower.tri(x[,,j], diag = TRUE)] %>% as.vector()
+    trig_matrix[j, ] <- x[, , j][lower.tri(x[, , j], diag = TRUE)] %>% as.vector()
   }
-  if (!transposed)
+  if (!transposed) {
     trig_matrix <- t(trig_matrix)
+  }
   return(trig_matrix)
 }
 
@@ -324,7 +353,7 @@ array_to_trig_mat <- function(x, transposed=TRUE) {
 #' @return F if the Euclidean division by 1 does not return 0
 
 is_integer <- function(x) {
-  return(x%%1 == 0)
+  return(x %% 1 == 0)
 }
 
 #' Control parameters output
@@ -342,7 +371,6 @@ is_integer <- function(x) {
 #' * The 3-dimensional covariance matrix array `Sigma`: \eqn{\mathrm{\Sigma}=(\Sigma_{i,j,l}) \in \mathbb{R}^{n \times n \times k}}, with each matrix
 #' \eqn{\Sigma_{..l}, l \in \{ 1, \ldots, k\}} storing the covariance matrix of a given component,
 #' whose diagonal terms correspond to the variance of each variable, and off-terms diagonal elements return the covariance matrix
-#' @param n the number of observations to be drawn
 #'
 #' @return a list of the estimates, uniquely identified, by ranking each component
 #' based on the ordering of their means
@@ -356,10 +384,9 @@ enforce_identifiability <- function(theta) {
     ordered_theta <- list(
       p = theta$p[ordered_components],
       mu = theta$mu[, ordered_components],
-      sigma = theta$sigma[,,ordered_components]
+      sigma = theta$sigma[, , ordered_components]
     )
-  }
-  else {
+  } else {
     # univariate context
     ordered_theta <- list(
       p = theta$p[order(theta$mu)],
@@ -373,13 +400,6 @@ enforce_identifiability <- function(theta) {
   ordered_theta$p <- ordered_theta$p / sum(ordered_theta$p)
   ordered_theta$p[k] <- 1 - sum(ordered_theta$p[-k])
   return(ordered_theta)
-}
-
-test_function <- function(x, w) {
-  return (apply(x, 2, function(column) {
-    prin(column)
-    stats::weighted.mean(column, w)}
-    ))
 }
 
 
@@ -400,152 +420,94 @@ test_function <- function(x, w) {
 
 
 format_theta_output <- function(theta) {
-  mu <- theta$mu; sigma <- theta$sigma; p <- theta$p
-  if(!is.matrix(mu)) { # univariate setting
+  mu <- theta$mu
+  sigma <- theta$sigma
+  p <- theta$p
+  if (!is.matrix(mu)) { # univariate setting
     return(unlist(theta))
-  }
-  else { # multivariate setting
-  dim_gaussian <- nrow(mu); k <- length(p)
+  } else { # multivariate setting
+    dim_gaussian <- nrow(mu)
+    k <- length(p)
 
-  formatted_p <- stats::setNames(p, nm=paste0("p", 1:k))
-  formatted_mu <- stats::setNames(mu %>% t() %>% as.vector(),
-                                  nm = tidyr::crossing(variable=paste0("mu_var", 1:dim_gaussian), component=paste0("comp", 1:k)) %>%
-                                    tidyr::unite(col="names_mu", variable, component) %>% dplyr::pull(names_mu))
+    formatted_p <- stats::setNames(p, nm = paste0("p", 1:k))
+    formatted_mu <- stats::setNames(mu %>% t() %>% as.vector(),
+      nm = tidyr::crossing(variable = paste0("mu_var", 1:dim_gaussian), component = paste0("comp", 1:k)) %>%
+        tidyr::unite(col = "names_mu", .data$variable, .data$component) %>% dplyr::pull("names_mu")
+    )
 
-  names_sigma <- c()
-  for(i in 1:dim_gaussian) {
-    for (l in i:dim_gaussian) {
-      for (j in 1:k) {
-      names_sigma <- c(names_sigma, glue::glue("sd_var{l}_var{i}_comp{j}"))
+    names_sigma <- c()
+    for (i in 1:dim_gaussian) {
+      for (l in i:dim_gaussian) {
+        for (j in 1:k) {
+          names_sigma <- c(names_sigma, glue::glue("sd_var{l}_var{i}_comp{j}"))
+        }
       }
     }
-  }
-  formatted_sigma <- stats::setNames(sigma %>% array_to_trig_mat(transposed = T) %>% as.vector(), names_sigma)
-  return(c(formatted_p, formatted_mu, formatted_sigma))
+    formatted_sigma <- stats::setNames(sigma %>% array_to_trig_mat(transposed = T) %>% as.vector(), names_sigma)
+    return(c(formatted_p, formatted_mu, formatted_sigma))
   }
 }
 
-#' @rdname format_theta_output
+#' Unformat the estimated parameters
+#'
+#' Especially, we remove redundant pairwise correlations, and name adequatly each parameter
+#'
+#' @author Bastien CHASSAGNOL
+#'
+#' @param formatted_theta a named vector, whose names refer to a given parameter and to an unique component
+#' @export
+#' @seealso [format_theta_output()], the reciprocal operation
+
+
 unformat_theta_output <- function(formatted_theta) {
-names_theta <- names(formatted_theta); theta <- list()
-# deal with proportions
-theta$p <- formatted_theta[stringr::str_detect(names_theta, "^p[[:digit:]]+$")] %>% unlist() %>% unname()
-k <- stringr::str_detect(names_theta, "^p[[:digit:]]+$") %>% sum()
+  names_theta <- names(formatted_theta)
+  theta <- list()
+  # deal with proportions
+  theta$p <- formatted_theta[stringr::str_detect(names_theta, "^p[[:digit:]]+$")] %>%
+    unlist() %>%
+    unname()
+  k <- stringr::str_detect(names_theta, "^p[[:digit:]]+$") %>% sum()
 
-# deal specifically per component parameter's distribution
-if (any(grepl("sd", names_theta))) { # multivariate setting
-  dim_gaussian <- stringr::str_detect(names_theta, "mu") %>% sum() / k
-  # deal with mean vector
-  theta$mu <- matrix(formatted_theta[stringr::str_detect(names_theta, "mu")] %>% unlist(), nrow=dim_gaussian, ncol=k, byrow = T)
-  # deal with sigma
-  theta$sigma <- matrix(formatted_theta[stringr::str_detect(names_theta, "sd")] %>% unlist(), nrow=k) %>% trig_mat_to_array()
-}
-else { # univariate setting
-  # deal with mean vector
-  theta$mu <- formatted_theta[stringr::str_detect(names_theta, "mu")] %>% unlist() %>% unname()
-  # deal with sigma
-  theta$sigma <- formatted_theta[stringr::str_detect(names_theta, "sigma")] %>% unlist() %>% unname()
-}
-return(theta)
+  # deal specifically per component parameter's distribution
+  if (any(grepl("sd", names_theta))) { # multivariate setting
+    dim_gaussian <- stringr::str_detect(names_theta, "mu") %>% sum() / k
+    # deal with mean vector
+    theta$mu <- matrix(formatted_theta[stringr::str_detect(names_theta, "mu")] %>% unlist(), nrow = dim_gaussian, ncol = k, byrow = T)
+    # deal with sigma
+    theta$sigma <- matrix(formatted_theta[stringr::str_detect(names_theta, "sd")] %>% unlist(), nrow = k) %>% trig_mat_to_array()
+  } else { # univariate setting
+    # deal with mean vector
+    theta$mu <- formatted_theta[stringr::str_detect(names_theta, "mu")] %>%
+      unlist() %>%
+      unname()
+    # deal with sigma
+    theta$sigma <- formatted_theta[stringr::str_detect(names_theta, "sigma")] %>%
+      unlist() %>%
+      unname()
+  }
+  return(theta)
 }
 
 
 
 #' Compute the Hellinger distance
-#'
+#' @param mu1,Sigma1 mean and (co)variance of the first Gaussian distribution (can be either univariate or multivariate)
+#' @param mu2,Sigma2 mean and (co)variance of the second Gaussian distribution
 #' @return the Hellinger distance between two multivariate Gaussian distributions
-hellinger <- function (mu1, Sigma1, mu2, Sigma2) {
-  p <- length(mu1);   d <- mu1 - mu2
+hellinger <- function(mu1, Sigma1, mu2, Sigma2) {
+  p <- length(mu1)
+  d <- mu1 - mu2
   # in univariate dimension
   if (p == 1) {
     vars <- Sigma1^2 + Sigma2^2
-    bc <- sqrt(2 *Sigma1 * Sigma2/ vars) *exp((-1/4) * d^2/vars) # Bhattacharyya coefficient
+    bc <- sqrt(2 * Sigma1 * Sigma2 / vars) * exp((-1 / 4) * d^2 / vars) # Bhattacharyya coefficient
     return(sqrt(abs(1 - bc)))
   }
   # in multivariate dimension
   else {
-    vars <- (Sigma1 + Sigma2)/2
-    hell_dist <- det(Sigma1)^(1/4) * det(Sigma2)^(1/4) / det(vars)^(1/2) *
-      exp((-1/8) * maha(d, vars))
+    vars <- (Sigma1 + Sigma2) / 2
+    hell_dist <- det(Sigma1)^(1 / 4) * det(Sigma2)^(1 / 4) / det(vars)^(1 / 2) *
+      exp((-1 / 8) * maha(d, vars))
     return(sqrt(1 - hell_dist) %>% as.numeric())
   }
 }
-
-
-
-
-
-# # aggregate scores obtained per parameter
-# global_bias <- local_scores_temp %>%
-#   dplyr::filter(scores == "bias") %>%
-#   dplyr::rowwise() %>%
-#   dplyr::transmute(global_bias = sum(abs(dplyr::c_across(dplyr::all_of(bootstrap_colnames))))) # global bias
-# global_mse <- local_scores_temp %>%
-#   dplyr::filter(scores == "mse") %>%
-#   dplyr::rowwise() %>%
-#   dplyr::transmute(global_mse = sum(dplyr::c_across(dplyr::all_of(bootstrap_colnames)))) # global mse
-# missed_cases <- distribution_parameters_temp %>%
-#   dplyr::count(initialisation_method, package, name = "N.missed") %>%
-#   dplyr::mutate(N.missed = Nbootstrap - N.missed) # count number of times the package failed in the estimation with the given number of clusters
-#
-# global_scores_temp <- global_scores_temp %>%
-#   dplyr::group_by(initialisation_method, package) %>%
-#   dplyr::summarise(
-#     logLikelihood = mean(logLikelihood),
-#     entropy = signif(entropy_value, digits = 2),
-#     OVL = signif(balanced_ovl, digits = 2), OVL_pairwise = signif(pairwise_ovl, digits = 2), skew = skew[1], nobservations = n, prop_outliers = prop_out
-#   ) %>%
-#   dplyr::inner_join(missed_cases, by = c("initialisation_method", "package")) %>%
-#   dplyr::inner_join(global_bias, by = c("initialisation_method", "package")) %>%
-#   dplyr::inner_join(global_mse, by = c("initialisation_method", "package"))
-# global_scores <- global_scores %>% dplyr::bind_rows(global_scores_temp)
-
-
-
-
-#' #' @describeIn emnmix_univariate EM implementation with mixsmsn package (designed to deal with skewed GMMs especially)
-#' #' @export
-#' em_mixsmsn <- function(x = x, k = 2, initialisation_algorithm = "hc", skew = rep(0, k),
-#'                        itmax = 5000, epsilon = 10^-12, start = NULL, ...) {
-#'   if (is.null(start)) {
-#'     start <- initialize_em_univariate(
-#'       x = x, k = k, nstart = 10L, itmax = 200, epsilon = 10^-2,
-#'       initialisation_algorithm = initialisation_algorithm, ...
-#'     )
-#'   }
-#'
-#'   # nu is the kurtosis, always equal to 3 for a classic Gaussian distribution(not skewed)
-#'   if (all(skew == 0)) {
-#'     # fit a classic Gaussian distribution
-#'     fit <- mixsmsn::smsn.mix(
-#'       y = x, nu = 3,
-#'       mu = start$mu, sigma2 = start$sigma^2, shape = skew, pii = start$p,
-#'       g = 2, get.init = FALSE, criteria = FALSE, group = FALSE, family = "Normal",
-#'       error = 10^-12, iter.max = 5000, calc.im = FALSE
-#'     )
-#'   } else {
-#'     # fit a skewed distribution
-#'     fit <- mixsmsn::smsn.mix(
-#'       y = x, nu = 3,
-#'       mu = start$mu, sigma2 = start$sigma, shape = skew, pii = start$p,
-#'       g = 2, get.init = FALSE, criteria = FALSE, group = FALSE, family = "Skew.normal",
-#'       error = 10^-12, iter.max = 5000, calc.im = FALSE
-#'     )
-#'   }
-#'
-#'
-#'   # return an ordered list by mean values
-#'   ordered_estimated_theta <- list(
-#'     p = fit$pii[order(fit$mu)],
-#'     mu = sort(fit$mu),
-#'     sigma = sqrt(fit$sigma2[order(fit$mu)])
-#'   )
-#'
-#'   ordered_estimated_theta <- ordered_estimated_theta %>% purrr::map(unname)
-#'   return(ordered_estimated_theta)
-#' }
-
-
-
-
-

@@ -43,6 +43,8 @@ benchmark_multivariate_GMM_estimation(
 \arguments{
 \item{mixture_functions}{List of the packages to be compared (Id:name of the package, value: its options)}
 
+\item{cores}{the number of cores to be used, by default all the available cores}
+
 \item{sigma_values, mean_values, proportions}{the true parameters to be retrieved}
 
 \item{prop_outliers}{the proportion of outliers added in the simulation}

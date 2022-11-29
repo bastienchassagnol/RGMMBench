@@ -6,6 +6,11 @@
 \usage{
 hellinger(mu1, Sigma1, mu2, Sigma2)
 }
+\arguments{
+\item{mu1, Sigma1}{mean and (co)variance of the first Gaussian distribution (can be either univariate or multivariate)}
+
+\item{mu2, Sigma2}{mean and (co)variance of the second Gaussian distribution}
+}
 \value{
 the Hellinger distance between two multivariate Gaussian distributions
 }

@@ -6,6 +6,9 @@
 \usage{
 maha(mu, sigma)
 }
+\arguments{
+\item{mu, sigma}{mean and covariance matrix of the distribution to which we have to compute the Mahalanobis distance}
+}
 \description{
 The Maha distance
 }

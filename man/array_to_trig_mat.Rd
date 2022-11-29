@@ -6,6 +6,12 @@
 \usage{
 array_to_trig_mat(x, transposed = TRUE)
 }
+\arguments{
+\item{x}{an array, of dimensions \eqn{D \times D \times k},
+each column \eqn{j \in \{1, \ldots, k \}} describing the covariance matrix associated to component \eqn{j}}
+
+\item{transposed}{boolean, should we transpose the returned matrix}
+}
 \description{
 Convert an array of covariance matrices to short lower triangular format
 }

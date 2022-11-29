@@ -37,7 +37,7 @@ initialize_em_multivariate(
 
 \item{short_iter, short_eps}{hyperparameters of the small EM method}
 
-\item{prior_prob}{minimal uncertainity added to the minor components of each observation assigned by hierarchical clustering}
+\item{prior_prob}{minimal uncertainty added to the minor components of each observation assigned by hierarchical clustering}
 
 \item{initialisation_algorithm}{the choice of the initialisation method, between kmeans, quantiles, random, hc, small em and rebmix method}
 

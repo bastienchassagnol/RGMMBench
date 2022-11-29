@@ -58,6 +58,7 @@ em_flexmix_univariate(
   k = 2,
   itmax = 5000,
   epsilon = 10^-12,
+  minprior = 0.05,
   initialisation_algorithm = "kmeans",
   start = NULL,
   ...
@@ -80,7 +81,6 @@ em_mclust_univariate(
   start = NULL,
   itmax = 5000,
   epsilon = 10^-12,
-  prior = NULL,
   ...
 )
 
@@ -129,12 +129,13 @@ one of our implemented initialization algorithms}
 
 \item{...}{additional parameters for the reviewed packages}
 
-\item{prior}{the mclust object used to store the supposed prior distributions of the parameters'
-components (only relevant if a Bayesian implementation is required)}
+\item{minprior}{Minimum prior probability of clusters, components falling below this threshold are removed during the iteration.}
+
+\item{embedNoise}{
+A small constant added to the diagonal entries of all covariance matrices. This may prevent covariance matrices collapsing prematurely. A suggested value is 1e-6. Covariance degeneration is detected during Cholesky decomposition, and will lead the trainer to remove the corresponding mixture component. For high-dimensional problem, setting \code{embedNoise} to nonzero may pose the illusion of massive log-likelihood, all because one or more mixture components are so close to singular, which makes the densities around them extremely high.
+}
 
 \item{parallel}{only relevant for GMKMCharlie package which has a native parallel implementation (by default, takes half of the available clusters)}
-
-\item{n}{the number of observations to be drawn}
 }
 \value{
 a list of the estimated parameters, ordered by increasing mean for identifiability issues

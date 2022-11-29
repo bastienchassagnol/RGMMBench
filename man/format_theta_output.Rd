@@ -2,12 +2,9 @@
 % Please edit documentation in R/utils.R
 \name{format_theta_output}
 \alias{format_theta_output}
-\alias{unformat_theta_output}
 \title{Format the estimated parameters}
 \usage{
 format_theta_output(theta)
-
-unformat_theta_output(formatted_theta)
 }
 \arguments{
 \item{theta}{a list with 3 entries:

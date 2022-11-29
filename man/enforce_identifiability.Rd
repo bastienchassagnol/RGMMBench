@@ -17,8 +17,6 @@ giving the mean values of the variables within a given component
 \eqn{\Sigma_{..l}, l \in \{ 1, \ldots, k\}} storing the covariance matrix of a given component,
 whose diagonal terms correspond to the variance of each variable, and off-terms diagonal elements return the covariance matrix
 }}
-
-\item{n}{the number of observations to be drawn}
 }
 \value{
 a list of the estimates, uniquely identified, by ranking each component
