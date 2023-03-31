@@ -179,4 +179,12 @@ test_that("GMM estimation in supervised case", {
   # saveRDS(estimated_theta, test_path("fixtures", "two_component_3D_supervised_estimation.rds"))
   old_theta <- readRDS(test_path("fixtures", "two_component_3D_supervised_estimation.rds"))
   expect_equal(estimated_theta, old_theta)
+
+
+  simulation_test_small_overlap <- MixSim::MixSim(BarOmega = 10^-4, MaxOmega = NULL, K=2, p=10, sph = FALSE, hom = FALSE,
+                            ecc = 0.90, PiLow = 1.0, int = c(0.0, 1.0), resN = 1000)
+
+  simulation_test_strong_overlap <- MixSim::MixSim(BarOmega = 0.2, MaxOmega = NULL, K=2, p=10, sph = FALSE, hom = FALSE,
+                                                  ecc = 0.90, PiLow = 1.0, int = c(0, 20), resN = 1000)
+
 })
