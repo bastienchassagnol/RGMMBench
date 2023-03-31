@@ -188,3 +188,5 @@ test_that("GMM estimation in supervised case", {
                                                   ecc = 0.90, PiLow = 1.0, int = c(0, 20), resN = 1000)
 
 })
+
+# small test
