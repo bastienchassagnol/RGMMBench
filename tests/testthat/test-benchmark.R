@@ -154,3 +154,66 @@ test_that("univariate time computation", {
   #         test_path("results", "univariate_test_time.rds"))
   expect_equal(univariate_time_computations, readRDS(test_path("results", "univariate_test_time.rds")))
 })
+
+
+
+test_that("HD multivariate benchmark", {
+
+  k <- 2
+  relevant_mixture_functions <- list(
+    "EMMIXmfa" = list(name_fonction = em_EMMIXmfa_multivariate, list_params = list()),
+    "HDclassif" = list(name_fonction = em_HDclassif_multivariate, list_params = list()),
+    "em R" = list(name_fonction = emnmix_multivariate, list_params = list()),
+    "Rmixmod" = list(name_fonction = RGMMBench::em_Rmixmod_multivariate, list_params = list()),
+    "mixtools" = list(name_fonction = em_mixtools_multivariate, list_params = list()),
+    "bgmm" = list(name_fonction = em_bgmm_multivariate, list_params = list()),
+    "mclust" = list(name_fonction = em_mclust_multivariate, list_params = list(prior = NULL)),
+    "EMCluster" = list(name_fonction = em_EMCluster_multivariate, list_params = list()),
+    "GMKMcharlie" = list(name_fonction = em_GMKMcharlie_multivariate, list_params = list()),
+    "flexmix" = list(name_fonction = em_flexmix_multivariate, list_params = list()))
+
+  #################################################################
+  ##                         low overlap                         ##
+  #################################################################
+  RNGkind("L'Ecuyer-CMRG"); set.seed(20)
+  theta_low_OVL_balanced_eccentric <- MixSim::MixSim(BarOmega = 10^-4,
+                                 K=2, p=10, sph = FALSE, hom = FALSE,
+                                 ecc = 0.90, PiLow = 1.0, int = c(0.0, 2.0))
+  theta_low_OVL_balanced_eccentric_formatted <- list(p=theta_low_OVL$Pi, mu=t(theta_low_OVL$Mu),
+                                                     sigma=theta_low_OVL$S)
+  HD_low_OVL_distribution_parameters <- benchmark_multivariate_GMM_estimation(
+    epsilon = 10^-4, itmax = 100,
+    mixture_functions = list("EMMIXmfa" = list(name_fonction = em_EMMIXmfa_multivariate, list_params = list())),
+    initialisation_algorithms = c("kmeans"),
+    sigma_values = list(theta_low_OVL_formatted$sigma),
+    mean_values = list(theta_low_OVL_formatted$mu),
+    proportions = list("balanced" = c(0.5, 0.5)),
+    Nbootstrap = 1, nobservations = c(2000))
+
+  RNGkind("L'Ecuyer-CMRG"); set.seed(20)
+  theta_low_OVL_unbalanced_eccentric <- MixSim::MixSim(BarOmega = 10^-4,
+                                                     K=2, p=10, sph = FALSE, hom = FALSE,
+                                                     ecc = 0.90, PiLow = 0.1, int = c(0.0, 2.0))
+  theta_low_OVL_unbalanced_eccentric_formatted <- list(p=theta_low_OVL_unbalanced_eccentric$Pi,
+                                                       mu=t(theta_low_OVL_unbalanced_eccentric$Mu),
+                                                       sigma=theta_low_OVL_unbalanced_eccentric$S)
+
+  RNGkind("L'Ecuyer-CMRG"); set.seed(20)
+  theta_low_OVL_unbalanced_circular <- MixSim::MixSim(BarOmega = 10^-4,
+                                                       K=2, p=10, sph = FALSE, hom = FALSE,
+                                                       ecc = 0.90, PiLow = 0.1, int = c(0.0, 2.0))
+  theta_low_OVL_unbalanced_circular_formatted <- list(p=theta_low_OVL_unbalanced_circular$Pi,
+                                                       mu=t(theta_low_OVL_unbalanced_circular$Mu),
+                                                       sigma=theta_low_OVL_unbalanced_circular$S)
+
+  RNGkind("L'Ecuyer-CMRG"); set.seed(20)
+  theta_low_OVL_balanced_circular <- MixSim::MixSim(BarOmega = 10^-4,
+                                                      K=2, p=10, sph = TRUE, hom = FALSE,
+                                                      ecc = 0.9, PiLow = 1, int = c(0.0, 2.0))
+  theta_low_OVL_balanced_circular_formatted <- list(p=theta_low_OVL_balanced_circular$Pi,
+                                                      mu=t(theta_low_OVL_balanced_circular$Mu),
+                                                      sigma=theta_low_OVL_balanced_circular$S)
+
+
+})
+

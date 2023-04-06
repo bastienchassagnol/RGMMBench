@@ -1,0 +1,69 @@
+---
+output: github_document
+always_allow_html: true
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  fig.align = "center",
+  out.width = "100%",
+  echo = FALSE,
+  message = FALSE, 
+  warning = FALSE,
+  dpi = 300
+)
+```
+
+```{r load-packages}
+library(bbcUtils)
+library(magrittr)
+library(deepdep)
+library(knitr)
+library(dplyr)
+```
+
+
+## `r pkg_version("RGMMBench")`
+
+```{r utils}
+dd_utils <- deepdep("RGMMBench", local = TRUE, depth = 4)
+dep_utils <-
+  deepdep("RGMMBench", local = TRUE, depth = 20)$name %>% 
+  unique() %>%  sort()
+plot_dependencies(dd_utils, show_stamp = FALSE)
+```
+
+`r length(dep_utils)` recursive dependencies: `r combine_words(dep_utils)`.
+
+## and the corresponding function entity graph
+
+```{r entitety-graph, results='asis'}
+installed_packages <- pkgapi::map_package(path = ".")
+installed_packages_plot_data <- installed_packages$calls %>%
+  mutate(package=stringr::str_extract(to, "(.*)(?=::)"),
+         file=tools::file_path_sans_ext(file) %>% basename(),
+         shape=forcats::fct_recode(file, triangle = "benchmark", ellipse = "visualisation",
+                                   square = "mixture",  star = "utils")) %>%
+  select(from, str, package, shape) %>% rename(to=str)  %>% filter(package=="RGMMBench")
+
+
+
+unique_functions <- tibble::as_tibble_col(union(installed_packages_plot_data$from, installed_packages_plot_data$to),
+                                          column_name = "id")
+
+nodes_visNet <- tibble::tibble( "id"=unique_functions$id, label = unique_functions$id,
+                                shape=unique_functions %>% dplyr::left_join(installed_packages_plot_data %>% select(-c(to, package)),
+                                                                            by = c("id"="from")) %>%  dplyr::distinct() %>%
+                                  pull(shape),
+                                title = paste0("<p><b>", unique_functions$id,"</b><br></p>"))
+
+visNetwork::visNetwork(nodes= nodes_visNet, height = "500px",
+                       edges=installed_packages_plot_data %>% select(-package), width = "100%") %>%
+  visNetwork::visEdges(arrows =list(to = list(enabled = TRUE, scaleFactor = 2)),
+           color = list(color = "lightblue", highlight = "red"))
+```
+
+with in total, `r length(unique_functions)` available within the package. 

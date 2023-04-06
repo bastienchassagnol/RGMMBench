@@ -164,6 +164,7 @@ benchmark_univariate_GMM_estimation <- function(mixture_functions, cores = getOp
 }
 
 
+
 #' @rdname benchmark_univariate_GMM_estimation
 #' @export
 
@@ -178,8 +179,7 @@ benchmark_multivariate_GMM_estimation <- function(mixture_functions, mean_values
   #################################################################
   ##     name variables for storing parameters distribution      ##
   #################################################################
-  id_tibble <- tibble::tibble()
-  id_scenario <- 1
+  id_tibble <- tibble::tibble();   id_scenario <- 1
   distribution_parameters <- tibble::tibble() # store empirical bootstrap distribution of the estimates
   local_scores <- tibble::tibble() # store bias and mse for each parameter
 
@@ -193,16 +193,17 @@ benchmark_multivariate_GMM_estimation <- function(mixture_functions, mean_values
         formatted_true_theta <- true_theta %>% format_theta_output()
         k <- length(p)
         bootstrap_colnames <- names(formatted_true_theta)
-        balanced_ovl <- compute_average_overlap(true_theta %>% magrittr::inset2("p", rep(1 / k, k))) %>% signif(digits = 2)
-        pairwise_ovl <- compute_average_overlap(true_theta) %>% signif(digits = 2)
+        balanced_ovl <- MixSim::overlap(Pi=rep(1/k, k), Mu=t(true_theta$mu), S=as.array(true_theta$sigma))$MaxOmega %>% signif(digits = 2)
+        pairwise_ovl <- MixSim::overlap(Pi=true_theta$p, Mu=t(true_theta$mu), S=as.array(true_theta$sigma))$MaxOmega %>% signif(digits = 2)
+        # balanced_ovl <- compute_average_overlap(true_theta %>% magrittr::inset2("p", rep(1 / k, k))) %>% signif(digits = 2)
+        # pairwise_ovl <- compute_average_overlap(true_theta) %>% signif(digits = 2)
         entropy_value <- compute_shannon_entropy(p) %>% signif(digits = 2) # compute entropy
 
 
         for (n in nobservations) {
-          message(paste(
-            "We aim at learning the following estimates: \n",
-            paste0(bootstrap_colnames, ": ", formatted_true_theta, collapse = " // ")
-          ))
+          message(paste("We are at scenario ID:", id_scenario))
+          distribution_parameters_per_config <- tibble::tibble()
+          # for (t in 1:Nbootstrap) {
           distribution_parameters_per_config <- parallel::mclapply(1:Nbootstrap, function(t) {
             simulated_distribution <- simulate_multivariate_GMM(theta = true_theta, n = n) # simulation
             distribution_parameters_per_run <- tibble::tibble()
@@ -218,7 +219,7 @@ benchmark_multivariate_GMM_estimation <- function(mixture_functions, mean_values
                   )
                 },
                 error = function(e) {
-                  e
+                  return(e)
                 }
               )
 
@@ -229,13 +230,18 @@ benchmark_multivariate_GMM_estimation <- function(mixture_functions, mean_values
                 for (index in 1:length(mixture_functions)) {
                   # retrieve function values
                   mixture_function <- mixture_functions[[index]]$name_fonction
-                  package_name <- names(mixture_functions)[index]
+                  package_name <- names(mixture_functions)[index]; print(package_name)
                   success_estimation <- tryCatch(
-                    {
+                    { # use of ternary operator structure
+                      start <- if (any(isTRUE(all.equal(mixture_function, em_clustvarsel_multivariate)),
+                                       isTRUE(all.equal(mixture_function, em_pgmm_multivariate)),
+                                       isTRUE(all.equal(mixture_function, em_HDclassif_multivariate)),
+                                       isTRUE(all.equal(mixture_function, em_EMMIXmfa_multivariate)))) NULL else  list(initial_estimates)
+
                       missing_estimated_theta_list <- do.call(mixture_function, c(
                         x = list(simulated_distribution$x), k = simulated_distribution$k,
                         epsilon = epsilon, itmax = itmax,
-                        start = list(initial_estimates), mixture_functions[[index]]$list_params
+                        start = start, mixture_functions[[index]]$list_params
                       ))
                       stopifnot(
                         "Parameters provided do not correspond to a fitted GMM estimation" =
@@ -243,6 +249,11 @@ benchmark_multivariate_GMM_estimation <- function(mixture_functions, mean_values
                       )
                     },
                     error = function(e) {
+                      print(e); dir.create("./errors", showWarnings = FALSE, recursive = T)
+                      saveRDS(list(x=simulated_distribution$x, k= simulated_distribution$k,
+                                   epsilon = epsilon, itmax = itmax, start=start),
+                              file = paste0("./errors/scenario_", id_scenario, "_init_algo_", init_algo,
+                                            "_package_name_", package_name, "_bootstrap_", t,".rds"))
                       return(e)
                     }
                   )
@@ -261,7 +272,11 @@ benchmark_multivariate_GMM_estimation <- function(mixture_functions, mean_values
                 } # estimation per package
               } # if initialization is properly done
             } # initialization algorithm
-            return(distribution_parameters_per_run)
+
+          # distribution_parameters_per_config <- distribution_parameters_per_config %>%
+          #   dplyr::bind_rows(distribution_parameters_per_run)
+          # } # Bootstraps
+          return(distribution_parameters_per_run)
           }, mc.cores = cores) %>% dplyr::bind_rows()
 
           #################################################################
@@ -279,19 +294,18 @@ benchmark_multivariate_GMM_estimation <- function(mixture_functions, mean_values
           local_scores_temp <- distribution_parameters_per_config %>%
             dplyr::group_by(dplyr::across(c("initialisation_method", "package"))) %>%
             dplyr::summarize(get_local_scores(dplyr::cur_data() %>%
-              dplyr::select(dplyr::all_of(bootstrap_colnames)), formatted_true_theta)) %>%
+                                                dplyr::select(dplyr::all_of(bootstrap_colnames)), formatted_true_theta)) %>%
             tibble::add_column(ID = id_scenario)
           local_scores <- local_scores %>% dplyr::bind_rows(local_scores_temp)
 
           # store temporary results
-          filename <- paste0("Nobservations_", n, paste0(names(formatted_true_theta), formatted_true_theta, collapse = "_"), ".rds")
           dir.create("./results", showWarnings = F, recursive = T)
           saveRDS(
             list(
               distribution = distribution_parameters_per_config, local_scores = local_scores_temp,
               config = id_tibble %>% dplyr::filter(.data$ID == id_scenario)
             ),
-            file.path("./results", filename)
+            file.path("./results", paste0("ID_scenario_", id_scenario, ".rds"))
           )
           message("One configuration of parameter has been fully completed.\n\n")
           id_scenario <- id_scenario + 1
@@ -500,10 +514,7 @@ compute_microbenchmark_multivariate <- function(mixture_functions,
         entropy_value <- compute_shannon_entropy(p) %>% signif(digits = 2) # compute entropy
 
         for (n in nobservations) {
-          message(paste(
-            "We aim at learning the following estimates: \n",
-            paste0(bootstrap_colnames, ": ", formatted_true_theta, collapse = " // "), "with", n, "nobservations."
-          ))
+
           simulated_distribution <- simulate_multivariate_GMM(n = n, theta = true_theta) # simulation of the experience
           time_configurations <- parallel::mclapply(1:Nbootstrap, function(t) {
             init_temp <- tibble::tibble()

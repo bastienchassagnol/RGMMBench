@@ -99,13 +99,16 @@ test_that("simulation of univariate GMM", {
 test_that("GMM estimation in multivariate case", {
   set.seed(20)
 
+  ##################################################################
+  ##                     in bivariate setting                     ##
+  ##################################################################
   # multivariate scenario
   true_theta <- list(
     p = c(0.5, 0.5),
     mu = matrix(c(20, 40, 40, 20), nrow = 2),
     sigma = array(c(1, 0.2, 0.2, 1, 1, -0.2, -0.2, 1), dim = c(2, 2, 2))
   )
-  multivariate_simulation <- simulate_multivariate_GMM(theta = true_theta, n = 1000)
+  bivariate_simulation <- simulate_multivariate_GMM(theta = true_theta, n = 1000)
   inititial_kmeans_estimates <- initialize_em_multivariate(multivariate_simulation$x,
     k = 2,
     initialisation_algorithm = "kmeans"
@@ -113,8 +116,74 @@ test_that("GMM estimation in multivariate case", {
 
   # test all packages implementing GMM mixture
   own_EM_implementation <- emnmix_multivariate(
-    x = multivariate_simulation$x, k = 2,
+    x = bivariate_simulation$x, k = 2,
     itmax = 1, epsilon = 10^-6,
+    start = inititial_kmeans_estimates
+  )
+
+  Rmixmod_multi_estimates <- em_Rmixmod_multivariate(
+    x = bivariate_simulation$x, k = 2,
+    itmax = 1000, epsilon = 10^-12,
+    start = inititial_kmeans_estimates
+  )
+
+  EMCluster_multi_estimates <- em_EMCluster_multivariate(
+    x = bivariate_simulation$x, k = 2,
+    itmax = 1, epsilon = 10^-6,
+    start = inititial_kmeans_estimates
+  )
+
+  bgmm_multi_estimates <- em_bgmm_multivariate(
+    x = bivariate_simulation$x, k = 2,
+    itmax = 1, epsilon = 10^-6,
+    start = inititial_kmeans_estimates
+  )
+
+
+  flexmix_multi_estimates <- em_flexmix_multivariate(
+    x = bivariate_simulation$x, k = 2,
+    itmax = 1, epsilon = 10^-6, minprior = 0,
+    start = inititial_kmeans_estimates
+  )
+
+  mixtools_multi_estimates <- em_mixtools_multivariate(
+    x = bivariate_simulation$x, k = 2,
+    itmax = 1, epsilon = 10^-6,
+    start = inititial_kmeans_estimates
+  )
+
+  mclust_multi_estimates <- em_mclust_multivariate(
+    x = bivariate_simulation$x, k = 2,
+    itmax = 1, epsilon = 10^-6,
+    start = inititial_kmeans_estimates
+  )
+
+  GMKMcharlie_multi_estimates <- em_GMKMcharlie_multivariate(
+    x = bivariate_simulation$x, k = 2,
+    itmax = 1, epsilon = 10^-6, embedNoise = 0,
+    start = inititial_kmeans_estimates, parallel = F
+  )
+  expect_equal(own_EM_implementation, flexmix_multi_estimates, tolerance = 10^-2) # GMKMCharlie as well
+  expect_equal(own_EM_implementation, Rmixmod_multi_estimates)
+
+
+  #################################################################
+  ##                   in multivariate setting                   ##
+  #################################################################
+  set.seed(20)
+  theta_small_overlap_enough_points <- MixSim::MixSim(BarOmega = 10^-4, K=2, p=10, sph = FALSE, hom = FALSE,
+                                                      ecc = 0.90, PiLow = 1.0, int = c(0.0, 1.0))
+  multivariate_simulation <- simulate_multivariate_GMM(theta = list(p=theta_small_overlap_enough_points$Pi,
+                                                                 mu=t(theta_small_overlap_enough_points$Mu),
+                                                                 sigma=theta_small_overlap_enough_points$S), n = 1000)
+  inititial_kmeans_estimates <- initialize_em_multivariate(multivariate_simulation$x,
+                                                           k = 2,
+                                                           initialisation_algorithm = "kmeans")
+
+  # test all packages implementing GMM mixture
+  own_EM_implementation <- emnmix_multivariate(
+    x = multivariate_simulation$x, k = 2,
+    itmax = 2000, epsilon = 10^-6,
     start = inititial_kmeans_estimates
   )
 
@@ -160,8 +229,58 @@ test_that("GMM estimation in multivariate case", {
     itmax = 1, epsilon = 10^-6, embedNoise = 0,
     start = inititial_kmeans_estimates, parallel = F
   )
-  expect_equal(own_EM_implementation, flexmix_multi_estimates, tolerance = 10^-2) # GMKMCharlie as well
-  expect_equal(own_EM_implementation, Rmixmod_multi_estimates)
+
+  # additional implementation of algorithms
+  clustvarsel_multi_estimates <- em_clustvarsel_multivariate(
+    x = multivariate_simulation$x, k = 2,
+    itmax = 1, epsilon = 10^-6,
+    start = inititial_kmeans_estimates)
+
+
+  HDclassif_multi_estimates <- em_HDclassif_multivariate(
+    x = multivariate_simulation$x, k = 2,
+    itmax = 2, epsilon = 10^-6,
+    start = inititial_kmeans_estimates)
+
+  EMMIXmfa_multi_estimates <- em_EMMIXmfa_multivariate(
+    x = multivariate_simulation$x, k = 2,
+    itmax = 2, epsilon = 10^-6,
+    start = inititial_kmeans_estimates)
+
+  pgmm_multi_estimates <- em_pgmm_multivariate(
+    x = multivariate_simulation$x, k = 2,
+    itmax = 10, epsilon = 0.1,
+    start = inititial_kmeans_estimates)
+
+
+  EMMMixmfa_errors <- readRDS("./errors/scenario_1_init_algo_kmeans_package_name_EMMIXmfa_bootstrap_13.rds")
+  EMMIXmfa_multi_estimates <- em_EMMIXmfa_multivariate(
+    x = EMMMixmfa_errors$x, k = 2,
+    epsilon = 10^-4, itmax = 20, start = NULL)
+
+  clustvarsel_errors <- readRDS("./errors/scenario_1_init_algo_kmeans_package_name_clustvarsel_bootstrap_16.rds")
+  clustvarsel_multi_estimates <- em_clustvarsel_multivariate(
+    x = clustvarsel_errors$x, k = 2,
+    epsilon = clustvarsel_errors$epsilon, itmax = clustvarsel_errors$itmax, start = NULL)
+
+  HDclassif_errors <- readRDS("./errors/scenario_1_init_algo_kmeans_package_name_HDclassif_bootstrap_45.rds")
+  HDclassif_multi_estimates <- em_HDclassif_multivariate(
+    x = HDclassif_errors$x, k = 2,
+    epsilon = HDclassif_errors$epsilon, itmax = HDclassif_errors$itmax, start = NULL)
+
+  # covariance_matrix <- matrix(c(1, 2, 2, 4), ncol=2); id_matrix <- c(1, 1, 1)
+  #
+  # test <- covariance_matrix %o% id_matrix; # outer product (the good format)
+  # test2 <- covariance_matrix %x% id_matrix # knronecker product
+  # covariance_matrix * id_matrix # hadamard prouct, native to base R
+  #
+  #
+  # transition_matrix <- matrix(c(1, 1, 1, 1, 1, 2), nrow=3)
+  # array_diag_matrix <- array(c(diag(1, nrow=2), diag(4, nrow=2)), dim=c(2,2,2))
+  # global_covariance <- array(c(transition_matrix %*% array_diag_matrix[,,1],
+  #                              transition_matrix %*% array_diag_matrix[,,2]), dim=c(3,2, 2))
+
+
 })
 
 
@@ -189,4 +308,3 @@ test_that("GMM estimation in supervised case", {
 
 })
 
-# small test

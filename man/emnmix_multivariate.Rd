@@ -9,6 +9,10 @@
 \alias{em_mixtools_multivariate}
 \alias{em_mclust_multivariate}
 \alias{em_GMKMcharlie_multivariate}
+\alias{em_clustvarsel_multivariate}
+\alias{em_HDclassif_multivariate}
+\alias{em_pgmm_multivariate}
+\alias{em_EMMIXmfa_multivariate}
 \title{Custom R implementation of the EM algorithm in the multivariate context}
 \usage{
 emnmix_multivariate(
@@ -93,6 +97,56 @@ em_GMKMcharlie_multivariate(
   start = NULL,
   parallel = FALSE,
   ...
+)
+
+em_clustvarsel_multivariate(
+  x = x,
+  k = 2,
+  initialisation_algorithm = "hc",
+  itmax = 5000,
+  epsilon = 10^-12,
+  back_steps = 20,
+  start = NULL,
+  ...
+)
+
+em_HDclassif_multivariate(
+  x = x,
+  k = 2,
+  initialisation_algorithm = "hc",
+  itmax = 5000,
+  epsilon = 10^-12,
+  start = NULL,
+  init = "kmeans",
+  kmeans.control = list(iter.max = 200L, nstart = 10L, algorithm = "Hartigan-Wong"),
+  mc.cores = getOption("mc.cores", parallel::detectCores())
+)
+
+em_pgmm_multivariate(
+  x = x,
+  k = 2,
+  initialisation_algorithm = "hc",
+  itmax = 5000,
+  epsilon = 10^-12,
+  aic_acc = 0.1,
+  start = NULL,
+  arguments_HDclassif = list(init = "kmeans", kmeans.control = list(iter.max = 200L,
+    nstart = 10L, algorithm = "Hartigan-Wong"), mc.cores = getOption("mc.cores",
+    parallel::detectCores()))
+)
+
+em_EMMIXmfa_multivariate(
+  x = x,
+  k = 2,
+  initialisation_algorithm = "hc",
+  conv_measure = "diff",
+  itmax = 5000,
+  epsilon = 10^-12,
+  start = NULL,
+  nkmeans = 10L,
+  arguments_HDclassif = list(init = "kmeans", kmeans.control = list(iter.max = 200L,
+    nstart = 10L, algorithm = "Hartigan-Wong"), mc.cores = getOption("mc.cores",
+    parallel::detectCores()))
 )
 }
 \arguments{

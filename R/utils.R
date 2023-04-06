@@ -45,8 +45,8 @@ compute_average_overlap <- function(true_theta, k = length(true_theta$p)) {
   # generate relevant values for the computation of the overlap
   misclassif_mat <- MixSim::overlap(
     Pi = true_theta$p,
-    Mu = as.matrix(true_theta$mu),
-    S = as.matrix(true_theta$sigma)
+    Mu = as.matrix(true_theta$mu) %>% t(),
+    S = true_theta$sigma %>% as.array()
   )$OmegaMap
   pairwise_overlap <- c()
   p <- true_theta$p
@@ -346,6 +346,40 @@ array_to_trig_mat <- function(x, transposed = TRUE) {
   return(trig_matrix)
 }
 
+# Create quadratic formula function:
+
+#' Create quadratic formula function:
+#'
+#' Quadratic equation form of ax^2 + bx + c
+#'
+#' @param a
+#' @param b
+#' @param c
+#'
+#' @return
+#' @export
+
+quadraticRoots <- function(a, b, c) {
+
+  discriminant <- (b^2) - (4*a*c)
+
+  if(discriminant < 0) {
+    stop("This quadratic equation has no real roots.")
+  }
+  else if(discriminant >= 0) {
+    x_int_plus <- (-b + sqrt(discriminant)) / (2*a)
+    x_int_neg <- (-b - sqrt(discriminant)) / (2*a)
+
+    return(c(x_int_plus, x_int_neg))
+  }
+  # else #discriminant = 0  case
+  #   x_int <- (-b) / (2*a)
+  # return(paste0("The quadratic equation has only one root. This root is ",
+  #               x_int))
+}
+
+
+
 #' Test whether a number is an integer
 #'
 #' @param x (a numeric input of size 1 (real number))
@@ -380,7 +414,9 @@ enforce_identifiability <- function(theta) {
 
   if (is.array(theta$sigma)) {
     # in that case, we are in a multivariate context
-    ordered_components <- do.call(order, theta$mu %>% as.data.frame())
+    # first component = one whose means are smaller on the first dimension
+    # if equality, redirect to second column, etc...
+    ordered_components <- do.call(order, t(theta$mu) %>% as.data.frame())
     ordered_theta <- list(
       p = theta$p[ordered_components],
       mu = theta$mu[, ordered_components],

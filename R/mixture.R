@@ -145,7 +145,8 @@ initialize_em_univariate <- function(x = NULL, k = 2, nstart = 10L, short_iter =
 
   ### initialize parametrization
   if (initialisation_algorithm == "kmeans") {
-    fit <- stats::kmeans(x = x, centers = k, nstart = nstart, iter.max = short_iter)
+    fit <- stats::kmeans(x = x, centers = k,
+                         nstart = nstart, iter.max = short_iter, algorithm = "Hartigan-Wong")
     estimated_theta <- list(
       p = fit$size / n,
       mu = as.vector(fit$centers),
@@ -248,7 +249,8 @@ initialize_em_multivariate <- function(x, k = 2, nstart = 10L, short_iter = 200,
 
   ### initialize parametrization
   if (initialisation_algorithm == "kmeans") {
-    fit <- stats::kmeans(x = x, centers = k, nstart = nstart, iter.max = short_iter)
+    fit <- stats::kmeans(x = x, centers = k, nstart = nstart,
+                         iter.max = short_iter, algorithm = "Hartigan-Wong")
     estimated_theta <- estimate_supervised_multivariate_GMM(x = x, s = fit$cluster, k = k)
   } else if (initialisation_algorithm == "random") {
     all_logs <- lapply(1:nstart, function(y) {
@@ -952,7 +954,7 @@ em_mclust_multivariate <- function(x = x, k = 2, initialisation_algorithm = "hc"
   estimated_theta <- mclust::emVVV(
     data = x, parameters = start_em, warn = FALSE, control = control, prior = NULL
   )$parameters
-  # return an ordered list by mean values
+
   fit <- list(
     p = estimated_theta$pro,
     mu = estimated_theta$mean,
@@ -1029,6 +1031,166 @@ em_GMKMcharlie_multivariate <- function(x = x, k = 2, initialisation_algorithm =
 
 
 
+#' @rdname emnmix_multivariate
+#' @inheritParams clustvarsel::clustvarsel
+#' @import clustvarsel
+#' @export
+em_clustvarsel_multivariate <- function(x = x, k = 2, initialisation_algorithm = "hc",
+                                        itmax = 5000, epsilon = 10^-12, back_steps=20, start = NULL, ...) {
+
+  ###  Alternative process
+  # first, retrieve the most relevant dimensions
+  # kept_dimensions <- clustvarsel::clustvarsel(x, G = k, direction="backward", search="greedy",
+  #                                             emModels2 = "VVV", hcModel = "VVV", allow.EEE = FALSE,
+  #                                             verbose=FALSE, parallel=TRUE, forcetwo=FALSE, ...)$subset
+  # # second, with the updated dataset, retrieve relevant dimensions
+  # initial_theta <- initialize_em_multivariate(
+  #   x = x[, kept_dimensions], k = k, nstart = 10L, itmax = 200, epsilon = 10^-2,
+  #   initialisation_algorithm = initialisation_algorithm)
+  # # third, perform the initialisation with mclust, the most widely used package
+  # ordered_estimated_theta <- em_mclust_multivariate (x = x, k = 2, start = initial_theta,
+  #                                                    itmax = itmax, epsilon = epsilon)
+  #
+  #
+
+  # in the canonical process, the only initialisation possible is with hierarchical clustering
+  # set parallel to FALSE to avoid redundancy with parallel clustering
+  estimated_theta <- clustvarsel::clustvarsel(x, G = k, direction="backward", search="greedy",
+                         emModels2 = "VVV", hcModel = "VVV", allow.EEE = FALSE,
+                         verbose=FALSE, parallel=FALSE, forcetwo=TRUE, itermax=back_steps)$model$parameters
+
+  fit <- list(
+    p = estimated_theta$pro,
+    mu = estimated_theta$mean,
+    sigma = estimated_theta$variance$sigma)
+
+  ### return an unique ordered parameter configuration
+  ordered_estimated_theta <- enforce_identifiability(fit)
+  return(ordered_estimated_theta)
+}
+
+
+#' @rdname emnmix_multivariate
+#' @export
+em_HDclassif_multivariate <- function(x = x, k = 2, initialisation_algorithm = "hc",
+                                      itmax = 5000, epsilon = 10^-12, start = NULL,
+                                      init="kmeans", kmeans.control=list(iter.max=200L, nstart=10L, algorithm="Hartigan-Wong"),
+                                      mc.cores=getOption("mc.cores", parallel::detectCores())) {
+
+  fit <- HDclassif::hddc(x, K = k, model = c("AkjBkQkDk"), threshold = 0.2,
+                         itermax = itmax, eps = epsilon,
+                         algo = "EM", d_select = "Cattell", init = init,
+                         show = FALSE,  scaling = FALSE, mc.cores=mc.cores, # alternatively
+                         min.individuals = 2, noise.ctrl = 1e-08, subset = Inf,
+                         nb.rep = 1, kmeans.control = kmeans.control, keepAllRes = F)
+
+
+  # convert back to the original space
+  p <- c(fit$prop); D <- ncol(fit$mu); mu <- matrix(fit$mu, nrow=D, ncol=k)
+  sigma <- array(0, dim=c(D, D, k))
+  for (j in 1:k) {
+    d_j <- ncol(fit$Q[[j]])
+    sigma[,,j] <- fit$Q[[j]] %*% diag(c(fit$a[j,1:d_j]-fit$b[j])) %*% t(fit$Q[[j]]) + fit$b[j] * diag(D)
+  }
+
+  ### return an unique ordered parameter configuration
+  ordered_estimated_theta <- enforce_identifiability(list(p = p, mu = mu, sigma = sigma))
+  return(ordered_estimated_theta)
+}
+
+
+
+
+#' @rdname emnmix_multivariate
+#' @export
+em_pgmm_multivariate <- function(x = x, k = 2, initialisation_algorithm = "hc",
+                                 itmax = 5000, epsilon = 10^-12, aic_acc=0.1, start = NULL,
+                                 arguments_HDclassif=list(init= "kmeans",
+                                                          kmeans.control=list(iter.max=200L, nstart=10L,
+                                                                              algorithm="Hartigan-Wong"),
+                                                          mc.cores=getOption("mc.cores",
+                                                                             parallel::detectCores()))) {
+
+  ###  way too long to compute all models
+
+  # D <- ncol(x); # as stated in Bouveyron 2007, minimal dimension onto which to project
+  # d_j <- min(D, min(quadraticRoots(a=1, b=-(1 + 2*D), c=D^2 - D))) %>% trunc()
+  # d_j <- ifelse((D-d_j)^2==D + d_j, d_j-1, d_j)
+
+  d_j <- do.call(HDclassif::hddc, c(list(data=x, K = k, model = c("AkjBkQkD"), threshold = 0.2,
+                                         itermax = itmax, eps = epsilon, algo = "EM", d_select = "Cattell",
+                                         show = FALSE,  scaling = FALSE,
+                                         min.individuals = 2, noise.ctrl = 1e-08, subset = Inf,
+                                         nb.rep = 1, keepAllRes = F), arguments_HDclassif)) %>%
+    magrittr::extract2("d") %>% mean()
+
+  fit <- pgmm::pgmmEM(x, rG = k, rq=d_j, class=NULL, #  1:d_j
+                      icl = FALSE, zstart=2,
+                      modelSubset="UUU", tol=aic_acc) # We use a different criterion of acceleration here
+
+
+  # convert back to the original space
+  eta <- fit$zhat; p <- c(); n <- nrow(x); D <- ncol(x)
+  mu <- matrix(0, nrow = D, ncol = k); sigma <- array(0, dim = c(D, D, k))
+  for (j in 1:k) {
+    p <- c(p, sum(eta[,j])/n)
+    mu[, j] <- apply(x, 2, stats::weighted.mean, eta[, j])
+    sigma[, , j] <- fit$load[[j]] %*% t(fit$load[[j]]) + fit$noisev[[j]]
+  }
+
+  ### return an unique ordered parameter configuration
+  ordered_estimated_theta <- enforce_identifiability(list(p = p, mu = mu, sigma = sigma))
+  return(ordered_estimated_theta)
+}
+
+#' @rdname emnmix_multivariate
+#' @export
+em_EMMIXmfa_multivariate <- function(x = x, k = 2, initialisation_algorithm = "hc", conv_measure = 'diff',
+                                     itmax = 5000, epsilon = 10^-12, start = NULL, nkmeans = 10L,
+                                     arguments_HDclassif=list(init= "kmeans",
+                                                              kmeans.control=list(iter.max=200L, nstart=10L,
+                                                                                  algorithm="Hartigan-Wong"),
+                                                              mc.cores=getOption("mc.cores", parallel::detectCores()))) {
+
+  # getOption("mc.cores", parallel::detectCores()) set it to one to avoid redundancy with the cluster
+  ###  use HDclassif to retrieve the internal dimension
+  # since this dimension can be specific to any dimension, we rather take the median (we might weight)
+  # by the relative abundance of each class
+  d_j <- do.call(HDclassif::hddc, c(list(data=x, K = k, model = c("AkjBkQkD"), threshold = 0.2,
+                         itermax = itmax, eps = epsilon, algo = "EM", d_select = "Cattell",
+                         show = FALSE,  scaling = FALSE,
+                         min.individuals = 2, noise.ctrl = 1e-08, subset = Inf,
+                         nb.rep = 1, keepAllRes = F), arguments_HDclassif))  %>%
+    magrittr::extract2("d") %>% mean()
+
+  # the fit itself
+  fit <- EMMIXmfa::mcfa(Y=x, g=k, q=d_j, itmax = itmax, nkmeans = nkmeans,
+                        tol = epsilon, conv_measure = conv_measure, warn_messages = FALSE)
+
+  p <- c(fit$pivec); mu <- fit$A %*% fit$xi; D <- ncol(x)
+  sigma <- array(0, dim = c(D, D, k))
+  for (j in 1:k) {
+    sigma[,,j] <- fit$A %*% fit$omega[,,j] %*% t(fit$A) + fit$D
+  }
+
+  ### return an unique ordered parameter configuration
+  ordered_estimated_theta <- enforce_identifiability(list(p = p, mu = mu, sigma = sigma))
+  return(ordered_estimated_theta)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 #' @rdname emnmix_univariate
@@ -1056,6 +1218,18 @@ em_otrimle <- function(x = x, k = 2, initialisation_algorithm = "hc",
   ordered_estimated_theta <- ordered_estimated_theta %>% purrr::map(unname)
   return(ordered_estimated_theta)
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
