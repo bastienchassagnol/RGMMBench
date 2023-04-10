@@ -3,6 +3,7 @@
 \name{plot_univariate_normal_density_distribution}
 \alias{plot_univariate_normal_density_distribution}
 \alias{plot_bivariate_normal_density_distribution}
+\alias{plot_HD_density_distribution}
 \title{Plot the true density distributions, in the univariate context}
 \usage{
 plot_univariate_normal_density_distribution(
@@ -15,6 +16,13 @@ plot_bivariate_normal_density_distribution(
   true_theta,
   nobservations = 1000,
   k = length(true_theta$p)
+)
+
+plot_HD_density_distribution(
+  true_theta,
+  nobservations = 10^3,
+  k = length(true_theta$p),
+  ade_plot = FALSE
 )
 }
 \arguments{

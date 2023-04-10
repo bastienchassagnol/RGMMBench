@@ -179,41 +179,29 @@ test_that("HD multivariate benchmark", {
   theta_low_OVL_balanced_eccentric <- MixSim::MixSim(BarOmega = 10^-4,
                                  K=2, p=10, sph = FALSE, hom = FALSE,
                                  ecc = 0.90, PiLow = 1.0, int = c(0.0, 2.0))
-  theta_low_OVL_balanced_eccentric_formatted <- list(p=theta_low_OVL$Pi, mu=t(theta_low_OVL$Mu),
-                                                     sigma=theta_low_OVL$S)
+  theta_low_OVL_balanced_eccentric_formatted <- list(p=theta_low_OVL_balanced_eccentric$Pi,
+                                                     mu=t(theta_low_OVL_balanced_eccentric$Mu),
+                                                     sigma=theta_low_OVL_balanced_eccentric$S)
   HD_low_OVL_distribution_parameters <- benchmark_multivariate_GMM_estimation(
     epsilon = 10^-4, itmax = 100,
-    mixture_functions = list("EMMIXmfa" = list(name_fonction = em_EMMIXmfa_multivariate, list_params = list())),
-    initialisation_algorithms = c("kmeans"),
-    sigma_values = list(theta_low_OVL_formatted$sigma),
-    mean_values = list(theta_low_OVL_formatted$mu),
-    proportions = list("balanced" = c(0.5, 0.5)),
-    Nbootstrap = 1, nobservations = c(2000))
+    mixture_functions = list("EMMIXmfa" = list(name_fonction = em_EMMIXmfa_multivariate, list_params = list()),
+                             "HDclassif" = list(name_fonction = em_HDclassif_multivariate, list_params = list())),
+    initialisation_algorithms = c("kmeans", "hc"),
+    sigma_values = list(theta_low_OVL_balanced_eccentric_formatted$sigma),
+    mean_values = list(theta_low_OVL_balanced_eccentric_formatted$mu),
+    proportions = list(theta_low_OVL_balanced_eccentric_formatted$p),
+    Nbootstrap = 10, nobservations = c(200))
 
-  RNGkind("L'Ecuyer-CMRG"); set.seed(20)
-  theta_low_OVL_unbalanced_eccentric <- MixSim::MixSim(BarOmega = 10^-4,
-                                                     K=2, p=10, sph = FALSE, hom = FALSE,
-                                                     ecc = 0.90, PiLow = 0.1, int = c(0.0, 2.0))
-  theta_low_OVL_unbalanced_eccentric_formatted <- list(p=theta_low_OVL_unbalanced_eccentric$Pi,
-                                                       mu=t(theta_low_OVL_unbalanced_eccentric$Mu),
-                                                       sigma=theta_low_OVL_unbalanced_eccentric$S)
 
-  RNGkind("L'Ecuyer-CMRG"); set.seed(20)
-  theta_low_OVL_unbalanced_circular <- MixSim::MixSim(BarOmega = 10^-4,
-                                                       K=2, p=10, sph = FALSE, hom = FALSE,
-                                                       ecc = 0.90, PiLow = 0.1, int = c(0.0, 2.0))
-  theta_low_OVL_unbalanced_circular_formatted <- list(p=theta_low_OVL_unbalanced_circular$Pi,
-                                                       mu=t(theta_low_OVL_unbalanced_circular$Mu),
-                                                       sigma=theta_low_OVL_unbalanced_circular$S)
-
-  RNGkind("L'Ecuyer-CMRG"); set.seed(20)
-  theta_low_OVL_balanced_circular <- MixSim::MixSim(BarOmega = 10^-4,
-                                                      K=2, p=10, sph = TRUE, hom = FALSE,
-                                                      ecc = 0.9, PiLow = 1, int = c(0.0, 2.0))
-  theta_low_OVL_balanced_circular_formatted <- list(p=theta_low_OVL_balanced_circular$Pi,
-                                                      mu=t(theta_low_OVL_balanced_circular$Mu),
-                                                      sigma=theta_low_OVL_balanced_circular$S)
-
+  multivariate_time_computations <- compute_microbenchmark_multivariate (
+    mixture_functions = list("EMMIXmfa" = list(name_fonction = em_EMMIXmfa_multivariate, list_params = list()),
+                             "HDclassif" = list(name_fonction = em_HDclassif_multivariate, list_params = list())),
+    sigma_values = list(theta_low_OVL_balanced_eccentric_formatted$sigma),
+    mean_values = list(theta_low_OVL_balanced_eccentric_formatted$mu),
+    proportions = list(theta_low_OVL_balanced_eccentric_formatted$p, c(0.9, 0.1)),
+    nobservations = c(100, 200, 500),
+    Nbootstrap = 5, epsilon = 10^-4, itmax = 20,
+    initialisation_algorithms = c("random", "rebmix"))
 
 })
 

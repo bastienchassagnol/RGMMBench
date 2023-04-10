@@ -239,13 +239,13 @@ test_that("GMM estimation in multivariate case", {
 
   HDclassif_multi_estimates <- em_HDclassif_multivariate(
     x = multivariate_simulation$x, k = 2,
-    itmax = 2, epsilon = 10^-6,
-    start = inititial_kmeans_estimates)
+    itmax = 200, epsilon = 10^-6,
+    start = NULL, initialisation_algorithm ="rebmix")
 
   EMMIXmfa_multi_estimates <- em_EMMIXmfa_multivariate(
     x = multivariate_simulation$x, k = 2,
-    itmax = 2, epsilon = 10^-6,
-    start = inititial_kmeans_estimates)
+    itmax = 20, epsilon = 10^-6,
+    start = NULL, initialisation_algorithm ="random")
 
   pgmm_multi_estimates <- em_pgmm_multivariate(
     x = multivariate_simulation$x, k = 2,
@@ -253,20 +253,26 @@ test_that("GMM estimation in multivariate case", {
     start = inititial_kmeans_estimates)
 
 
-  EMMMixmfa_errors <- readRDS("./errors/scenario_1_init_algo_kmeans_package_name_EMMIXmfa_bootstrap_13.rds")
+
+
+
+
+  EMMMixmfa_errors <- readRDS("../mixture_models/HD_low_OVL_parameters_2023-04-06_23-27-47/job_1/errors/scenario_1_init_algo_kmeans_package_name_EMMIXmfa_bootstrap_11.rds")
   EMMIXmfa_multi_estimates <- em_EMMIXmfa_multivariate(
     x = EMMMixmfa_errors$x, k = 2,
-    epsilon = 10^-4, itmax = 20, start = NULL)
+    epsilon = 10^-6, itmax = 1000, start = NULL)
+  check_parameters_validity_multivariate(HDclassif_multi_estimates)
 
-  clustvarsel_errors <- readRDS("./errors/scenario_1_init_algo_kmeans_package_name_clustvarsel_bootstrap_16.rds")
-  clustvarsel_multi_estimates <- em_clustvarsel_multivariate(
-    x = clustvarsel_errors$x, k = 2,
-    epsilon = clustvarsel_errors$epsilon, itmax = clustvarsel_errors$itmax, start = NULL)
+  # clustvarsel_errors <- readRDS("./errors/scenario_1_init_algo_kmeans_package_name_clustvarsel_bootstrap_16.rds")
+  # clustvarsel_multi_estimates <- em_clustvarsel_multivariate(
+  #   x = clustvarsel_errors$x, k = 2,
+  #   epsilon = clustvarsel_errors$epsilon, itmax = clustvarsel_errors$itmax, start = NULL)
 
-  HDclassif_errors <- readRDS("./errors/scenario_1_init_algo_kmeans_package_name_HDclassif_bootstrap_45.rds")
+  HDclassif_errors <- readRDS("../mixture_models/HD_low_OVL_parameters_2023-04-06_23-27-47/job_1/errors/scenario_2_init_algo_kmeans_package_name_HDclassif_bootstrap_3.rds")
   HDclassif_multi_estimates <- em_HDclassif_multivariate(
     x = HDclassif_errors$x, k = 2,
     epsilon = HDclassif_errors$epsilon, itmax = HDclassif_errors$itmax, start = NULL)
+  # check_parameters_validity_multivariate(HDclassif_multi_estimates)
 
   # covariance_matrix <- matrix(c(1, 2, 2, 4), ncol=2); id_matrix <- c(1, 1, 1)
   #

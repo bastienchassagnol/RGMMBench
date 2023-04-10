@@ -7,25 +7,27 @@
 #' @param remove_outliers boolean: remove or not outlying estimates, by default set to True
 #' @param size_tag in each facet, controls the size of the parameter emphasised
 #' @param num_col How to organise the facets? by default according to the number of components
+#' @param match_symbol To discard the set of parameters you want to be removed
 #'
 #' @return boxplot_parameters a ggplot object representing the boxplot distributions of the estimates per package and initialisation package
 #'
 #' @export
 
-plot_boxplots_parameters <- function(distribution_parameters, true_theta, remove_outliers = T, size_tag = 4, num_col = length(true_theta$p)) {
+plot_boxplots_parameters <- function(distribution_parameters, true_theta, remove_outliers = T,
+                                     size_tag = 4, num_col = length(true_theta$p), match_symbol = "^p[[:digit:]]+|mu|sigma|sd") {
 
   # format true theta values, according to their use
   formatted_true_theta <- format_theta_output(true_theta)
   true_theta_df <- tibble::tibble(
     name_parameter = names(unlist(formatted_true_theta)) %>%
       factor(levels = unique(names(unlist(formatted_true_theta)))),
-    true_value = unlist(formatted_true_theta)
-  )
+    true_value = unlist(formatted_true_theta)) %>%
+    dplyr::filter(grepl(match_symbol, .data$name_parameter))
 
 
   # format distribution data
   distribution_parameters <- distribution_parameters %>%
-    tidyr::pivot_longer(dplyr::matches("p[[:digit:]]+|mu|sigma|sd"),
+    tidyr::pivot_longer(dplyr::matches(match_symbol),
       names_to = "name_parameter",
       values_to = "value_parameter"
     ) %>%
@@ -37,12 +39,13 @@ plot_boxplots_parameters <- function(distribution_parameters, true_theta, remove
 
   if (remove_outliers) {
     distribution_parameters <- distribution_parameters %>%
-      dplyr::group_by(dplyr::across("name_parameter")) %>%
+      dplyr::group_by(dplyr::across(c("name_parameter", "package"))) %>%
       dplyr::filter(.data$value_parameter > (quantile(.data$value_parameter, probs = c(0.25)) - 1.5 * stats::IQR(.data$value_parameter)) &
         .data$value_parameter < (quantile(.data$value_parameter, probs = c(0.75)) + 1.5 * stats::IQR(.data$value_parameter)))
   }
   # generate Boxplots
-  boxplot_parameters <- ggplot(distribution_parameters, aes(x = .data$package, y = .data$value_parameter, fill = .data$initialisation_method)) +
+  boxplot_parameters <- ggplot(distribution_parameters, aes(x = .data$package, y = .data$value_parameter,
+                                                            fill = .data$initialisation_method)) +
     geom_boxplot(outlier.shape = 16, outlier.size = 0.5, position = position_dodge(width = 0.9), width = 0.4) +
     stat_summary(
       fun = mean, geom = "point", shape = 3, size = 1, colour = "yellow",
@@ -110,7 +113,7 @@ plot_ellipses_bivariate <- function(distribution_parameters, true_theta, alpha =
   ## generate data for ellipses with the estimated parameters
   # compute the average parameter
   distribution_parameters_mean <- distribution_parameters %>%
-    tidyr::pivot_longer(dplyr::matches("p[[:digit:]]+|mu|sigma|sd"),
+    tidyr::pivot_longer(dplyr::matches("^p[[:digit:]]+|mu|sigma|sd"),
       names_to = "name_parameter",
       values_to = "value_parameter"
     ) %>%
@@ -248,7 +251,7 @@ plot_Hellinger <- function(distribution_parameters, true_theta, num_col = length
   # format the data
   k <- length(true_theta$p)
   distribution_parameters_list <- distribution_parameters %>%
-    tidyr::pivot_longer(dplyr::matches("p[[:digit:]]+|mu|sigma|sd"),
+    tidyr::pivot_longer(dplyr::matches("^p[[:digit:]]+|mu|sigma|sd"),
       names_to = "name_parameter",
       values_to = "value_parameter"
     ) %>%
@@ -511,6 +514,137 @@ plot_bivariate_normal_density_distribution <- function(true_theta, nobservations
   return(isogradient)
 }
 
+#' @importFrom adegraphics s.class
+#' @rdname plot_univariate_normal_density_distribution
+#' @export
+plot_HD_density_distribution <- function(true_theta, nobservations = 10^3,
+                                         k = length(true_theta$p), ade_plot=FALSE) {
+
+  tibble_dataset <- purrr::map_dfr(1:k, function(j) {
+    x_per_component <- MASS::mvrnorm(n = nobservations, mu = true_theta$mu[,j],
+                                     Sigma = true_theta$sigma[, , j], empirical = FALSE)
+    tibble_per_component <- x_per_component %>% as_tibble() %>%
+      tibble::add_column(component=paste("Comp", j) %>% as.factor())
+    return(tibble_per_component)
+  })
+
+
+  pca1 <- ade4::dudi.pca(tibble_dataset %>% dplyr::select(-component),
+                         scannf = FALSE, nf = 2, center=FALSE, scale=FALSE)
+  mypalette <- rainbow(k); D <- nrow(true_theta$mu)
+  if (requireNamespace("adegraphics", quietly = TRUE) & ade_plot) {
+    eigen_plot <- adegraphics::s1d.barchart(pca1$eig, p1d.horizontal = F,
+                                            ppolygons.col = "blue", plot = F)
+
+    ind_plot <- s.class(pca1$li, fac = tibble_dataset$component,
+                        plot=FALSE, col=mypalette,
+                        pellipses.lwd = 2, pellipses.border = mypalette,
+                        pellipses.col = mypalette,
+                        starSize = 0, ppoints.cex = 0.2)
+    var_plot <- adegraphics::s.corcircle(pca1$co,
+                            lab = names(tibble_dataset %>% dplyr::select(-component)),
+                            fullcircle = FALSE, plot = FALSE)
+
+
+    ###  Attempt, failed, to convert the ade4 plot into a good looking ggplot
+
+    # ind_plot_t <- ind_plot %>% adegraphics::gettrellis() %>% ggplotify::as.ggplot()
+    # ind_plot_t + annotation_custom(grob=eigen_plot %>% adegraphics::gettrellis() %>% ggplotify::as.grob(),
+    #                                xmin = 1, xmax = 3, ymin = -0.3, ymax = 0.6)
+    # test <- gridExtra::arrangeGrob(grobs=list(ggplotify::as.ggplot(ind_plot %>% adegraphics::gettrellis())),
+    #                                bottom=ggplotify::as.ggplot(ind_plot %>% adegraphics::gettrellis()),
+    #                                left=ggplotify::as.ggplot(eigen_plot %>% adegraphics::gettrellis()))
+    # ggsave("test_HD_adegraphics.pdf", ind_plot %>% adegraphics::gettrellis() %>% ggplotify::as.grob())
+
+
+    HD_dp <- adegraphics::insert(eigen_plot, ind_plot,  ratio=0.25, plot=F,
+                                 posi = "topleft",  inset = c(0, -0.05))
+    HD_dp <- adegraphics::insert(var_plot, HD_dp,  ratio=0.3,
+                                    posi = "bottomright", plot=F)
+  }
+  else { # with ggplot object
+    eigen_plot <- factoextra::fviz_eig(pca1, main=NULL, ggtheme = theme_bw(), addlabels = F) +
+      ggtitle(element_blank()) +
+      ylab("") +
+      theme(plot.margin = unit(c(0, 0, 0, 0), "null"),
+            panel.spacing = unit(c(0, 0, 0, 0), "null"))
+    indiv_plot <- factoextra::fviz_pca_biplot(pca1, # Individuals
+                    geom.ind = "point",
+                    fill.ind = tibble_dataset$component,
+                    pointshape = 21, pointsize = 1, ind.var=1,
+                    repel = TRUE, addEllipses = TRUE, ellipse.level=0.95, # Variables
+                    col.var = "contrib", gradient.cols = c("blue", "white", "red"), geom.var = "arrow",
+                    ggtheme = theme_bw())+
+      labs(fill = "Clusters", color = "Contribution", title = element_blank())+ # Change legend title
+      theme(axis.title = element_text(size = 14, face = 'bold'),
+            axis.text = element_text(size = 14, face = 'bold')) +
+      # hrbrthemes::theme_ipsum()+
+      coord_fixed()
+
+    HD_dp <- cowplot::plot_grid(eigen_plot, indiv_plot,nrow=2, align = "hv", axis = "tblr")
+
+    # modified_eigen_plot <- eigen_plot + # set the background as transparent
+    #   xlab("") + ylab("") + hrbrthemes::theme_ipsum() +
+    #   theme(panel.background = element_rect(fill=alpha("white", 0.2)),
+    #         plot.background =  element_rect(fill = "transparent"),
+    #         plot.margin = margin(t = 0, r = 0,   b = 0,  l = 0),
+    #         axis.title=element_blank(),
+    #         panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+    #         axis.text.x=element_blank(), axis.text.y=element_blank(),
+    #         axis.ticks.x=element_blank(), axis.ticks.y=element_blank())
+    #
+    # limits_ggplot <- get_plot_limits(indiv_plot)
+    # range_y <- limits_ggplot$ymax - limits_ggplot$ymin; range_x <- limits_ggplot$xmax - limits_ggplot$xmin
+    # HD_dp <- indiv_plot +
+    #   annotation_custom(grob = ggplotify::as.grob(modified_eigen_plot),
+    #                     xmin = limits_ggplot$xmin + 0.6 * range_x, xmax = limits_ggplot$xmax,
+    #                     ymin = limits_ggplot$ymin + 0.6 * range_y, ymax = limits_ggplot$ymax)
+  }
+
+  # generate parallel distirbution plots
+  sampled_tibble_dataset <- tibble_dataset %>% dplyr::slice_sample(n=50)
+  parallel_plot_unscaled <- GGally::ggparcoord(sampled_tibble_dataset, showPoints = T,
+             columns = 1:D, groupColumn = D + 1, scale="globalminmax", alphaLines = 0.3) +
+    scale_color_discrete(type=mypalette) +
+    # hrbrthemes::theme_ipsum()+
+    theme_bw() +
+    labs(title = "Parallel Coordinate Plot",
+         subtitle = "No scaling") +
+    xlab("") + ylab("")
+
+
+  parallel_plot_scaled <- GGally::ggparcoord(sampled_tibble_dataset, showPoints = T,
+                                             columns = 1:D, groupColumn = D + 1,
+                                             scale="std", alphaLines = 0.3) +
+    scale_color_discrete(type=mypalette) +
+    theme(title=element_blank()) +
+    labs(subtitle = "Univariately normalised") +
+    theme_bw() +
+    # hrbrthemes::theme_ipsum()
+    xlab("") + ylab("")
+  parallel_plot <- cowplot::plot_grid(parallel_plot_unscaled, parallel_plot_scaled,
+                                      align="hv", axis="tblr",nrow=2)
+
+
+  # final concatenation of plot
+  final_dp <- cowplot::plot_grid(HD_dp + theme(plot.tag = element_text(size=24, vjust = 1.5, hjust=-0.5, face = "bold")) +
+                                   labs(tag = "A"),
+                                 parallel_plot+ theme(plot.tag = element_text(size=24, face = "bold",
+                                                                              vjust = 1.5, hjust=-0.5)) + labs(tag = "B"),
+                                 ncol=2, align = "hv", axis="tblr")
+
+  # final_dp <- cowplot::plot_grid(HD_dp + theme(plot.tag = element_text(size=24, face = "bold")) + labs(tag = "A") +
+  #                                  labs(title = "Individual and variable projection"),
+  #                                parallel_plot_unscaled + theme(plot.tag = element_text(size=24, face = "bold")) + labs(tag = "B"),
+  #                                ncol=2, align = "v", axis="tblr", rel_widths = c(1, 2))
+
+  return(final_dp)
+}
+
+
+
+
+
 
 
 #' Plot Correlation Heatmap
@@ -527,7 +661,7 @@ plot_bivariate_normal_density_distribution <- function(true_theta, nobservations
 plot_correlation_Heatmap <- function(distribution_parameters) {
   # format the data
   distribution_parameters_long <- distribution_parameters %>%
-    tidyr::pivot_longer(dplyr::matches("p[[:digit:]]+|mu|sigma|sd"),
+    tidyr::pivot_longer(dplyr::matches("^p[[:digit:]]+|mu|sigma|sd"),
       names_to = "name_parameter",
       values_to = "value_parameter"
     ) %>%

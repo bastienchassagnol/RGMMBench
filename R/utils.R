@@ -439,6 +439,24 @@ enforce_identifiability <- function(theta) {
 }
 
 
+
+#' Retrieve the limits of a package
+#'
+#' @param plota ggplot object
+#'
+#' @return
+
+get_plot_limits <- function(plot) {
+  gb = ggplot_build(plot)
+  xmin = gb$layout$panel_params[[1]]$x.range[1]
+  xmax = gb$layout$panel_params[[1]]$x.range[2]
+  ymin = gb$layout$panel_params[[1]]$y.range[1]
+  ymax = gb$layout$panel_params[[1]]$y.range[2]
+  list(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax)
+}
+
+
+
 #' Format the estimated parameters
 #'
 #' Especially, we remove redundant pairwise correlations, and name adequatly each parameter

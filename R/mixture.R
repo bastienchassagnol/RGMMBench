@@ -312,17 +312,16 @@ initialize_em_multivariate <- function(x, k = 2, nstart = 10L, short_iter = 200,
     )
 
     # one step of EM is required, just for the computation of the estimated parameters
-    suppressMessages(fit <- rebmix::REBMIX(
-      model = "REBMVNORM", Dataset = list(data.frame(x)), Preprocessing = "kernel density estimation",
-      Restraints = "loose", cmax = k + 1, cmin = k, Criterion = "BIC", EMcontrol = EM_control
-    ))
+    suppressMessages(    fit <- rebmix::REBMIX(model = "REBMVNORM", Dataset = list(data.frame(x)),
+                                               Preprocessing = "kernel density estimation", cmin=k - 1, cmax=k + 1,
+                                               Restraints = "loose", Criterion = "BIC", EMcontrol = EM_control))
 
     mu <- matrix(fit@Theta[[1]][grep("^theta1\\.", names(fit@Theta[[1]]))] %>% unlist() %>% unname(),
-      nrow = dim_gaussian, ncol = k
+                 nrow = dim_gaussian, ncol = k
     ) # estimates are returned as an unique long vector
 
     sigma <- array(fit@Theta[[1]][seq(3, 3 * k, by = 3)] %>% unlist() %>% unname(),
-      dim = c(dim_gaussian, dim_gaussian, k)
+                   dim = c(dim_gaussian, dim_gaussian, k)
     )
     estimated_theta <- list(p = unlist(fit@w), mu = mu, sigma = sigma)
   }
@@ -334,7 +333,7 @@ initialize_em_multivariate <- function(x, k = 2, nstart = 10L, short_iter = 200,
     dir.create("./errors/initialisation_failures", showWarnings = F, recursive = T)
     saveRDS(
       object = list(x = x, algo = initialisation_algorithm),
-      file = glue::glue("./errors/initialisation_failures/init_algo_{initialisation_algorithm}_error_{init_error_count}.rds")
+      file = glue::glue("./errors/initialisation_failures/init_algo_{initialisation_algorithm}_error.rds")
     )
     stop("Parameters learnt from the initiation algorithm are inconsistent with the number of clusters required,
              likely to come from rebmix overestimating the number of clusters")
@@ -845,7 +844,7 @@ em_flexmix_multivariate <- function(x = x, k = 2, itmax = 5000, epsilon = 10^-12
 
 #' @rdname emnmix_univariate
 #' @export
-em_mixtools_univariate <- function(x = x, k = 2, initialisation_algorithm = "hc",
+em_mixtools_univariate <- function(x = x, k = 2, initialisation_algorithm = "kmeans",
                                    itmax = 5000, epsilon = 10^-12, start = NULL, ...) {
   # initialization section
   if (is.null(start)) {
@@ -868,7 +867,7 @@ em_mixtools_univariate <- function(x = x, k = 2, initialisation_algorithm = "hc"
 
 #' @rdname emnmix_multivariate
 #' @export
-em_mixtools_multivariate <- function(x = x, k = 2, initialisation_algorithm = "hc",
+em_mixtools_multivariate <- function(x = x, k = 2, initialisation_algorithm = "kmeans",
                                      itmax = 5000, epsilon = 10^-12, start = NULL, ...) {
   # initialization section
   if (is.null(start)) {
@@ -894,7 +893,7 @@ em_mixtools_multivariate <- function(x = x, k = 2, initialisation_algorithm = "h
 
 #' @rdname emnmix_univariate
 #' @export
-em_mclust_univariate <- function(x = x, k = 2, initialisation_algorithm = "hc", start = NULL,
+em_mclust_univariate <- function(x = x, k = 2, initialisation_algorithm = "kmeans", start = NULL,
                                  itmax = 5000, epsilon = 10^-12, ...) {
 
   # set relevant parameters to be done
@@ -926,7 +925,7 @@ em_mclust_univariate <- function(x = x, k = 2, initialisation_algorithm = "hc", 
 
 #' @rdname emnmix_multivariate
 #' @export
-em_mclust_multivariate <- function(x = x, k = 2, initialisation_algorithm = "hc", start = NULL,
+em_mclust_multivariate <- function(x = x, k = 2, initialisation_algorithm = "kmeans", start = NULL,
                                    itmax = 5000, epsilon = 10^-12, ...) {
 
 
@@ -971,7 +970,7 @@ em_mclust_multivariate <- function(x = x, k = 2, initialisation_algorithm = "hc"
 #' @rdname emnmix_univariate
 #' @inheritParams GMKMcharlie::GM
 #' @export
-em_GMKMcharlie_univariate <- function(x = x, k = 2, initialisation_algorithm = "hc", embedNoise = 1e-6,
+em_GMKMcharlie_univariate <- function(x = x, k = 2, initialisation_algorithm = "kmeans", embedNoise = 1e-6,
                                       itmax = 5000, epsilon = 10^-12, start = NULL, parallel = FALSE, ...) {
   # initialization section
   if (is.null(start)) {
@@ -1002,7 +1001,7 @@ em_GMKMcharlie_univariate <- function(x = x, k = 2, initialisation_algorithm = "
 #' @rdname emnmix_multivariate
 #' @inheritParams GMKMcharlie::GM
 #' @export
-em_GMKMcharlie_multivariate <- function(x = x, k = 2, initialisation_algorithm = "hc", embedNoise = 1e-6,
+em_GMKMcharlie_multivariate <- function(x = x, k = 2, initialisation_algorithm = "kmeans", embedNoise = 1e-6,
                                         itmax = 5000, epsilon = 10^-12, start = NULL, parallel = FALSE, ...) {
   # initialization section
   if (is.null(start)) {
@@ -1035,7 +1034,7 @@ em_GMKMcharlie_multivariate <- function(x = x, k = 2, initialisation_algorithm =
 #' @inheritParams clustvarsel::clustvarsel
 #' @import clustvarsel
 #' @export
-em_clustvarsel_multivariate <- function(x = x, k = 2, initialisation_algorithm = "hc",
+em_clustvarsel_multivariate <- function(x = x, k = 2, initialisation_algorithm = "kmeans",
                                         itmax = 5000, epsilon = 10^-12, back_steps=20, start = NULL, ...) {
 
   ###  Alternative process
@@ -1072,17 +1071,55 @@ em_clustvarsel_multivariate <- function(x = x, k = 2, initialisation_algorithm =
 
 #' @rdname emnmix_multivariate
 #' @export
-em_HDclassif_multivariate <- function(x = x, k = 2, initialisation_algorithm = "hc",
+em_HDclassif_multivariate <- function(x = x, k = 2, initialisation_algorithm = "kmeans",
                                       itmax = 5000, epsilon = 10^-12, start = NULL,
-                                      init="kmeans", kmeans.control=list(iter.max=200L, nstart=10L, algorithm="Hartigan-Wong"),
+                                      kmeans.control=list(iter.max=200L, nstart=10L, algorithm="Hartigan-Wong"),
                                       mc.cores=getOption("mc.cores", parallel::detectCores())) {
 
-  fit <- HDclassif::hddc(x, K = k, model = c("AkjBkQkDk"), threshold = 0.2,
-                         itermax = itmax, eps = epsilon,
-                         algo = "EM", d_select = "Cattell", init = init,
-                         show = FALSE,  scaling = FALSE, mc.cores=mc.cores, # alternatively
-                         min.individuals = 2, noise.ctrl = 1e-08, subset = Inf,
-                         nb.rep = 1, kmeans.control = kmeans.control, keepAllRes = F)
+  if (initialisation_algorithm=="kmeans") {
+    fit <- HDclassif::hddc(x, K = k, model = c("AkjBkQkDk"), threshold = 0.2,
+                           itermax = itmax, eps = epsilon,
+                           algo = "EM", d_select = "Cattell", init = "kmeans",
+                           show = FALSE,  scaling = FALSE, mc.cores=mc.cores, # alternatively
+                           min.individuals = 2, noise.ctrl = 1e-08, subset = Inf,
+                           nb.rep = 1, kmeans.control = kmeans.control, keepAllRes = F)
+  }
+  else if (initialisation_algorithm=="small-em") {
+    fit <- HDclassif::hddc(x, K = k, model = c("AkjBkQkDk"), threshold = 0.2,
+                            itermax = itmax, eps = epsilon,
+                            algo = "EM", d_select = "Cattell", init = "mini-em",
+                            show = FALSE,  scaling = FALSE, mc.cores=mc.cores, # alternatively
+                            min.individuals = 2, noise.ctrl = 1e-08, subset = Inf,
+                            nb.rep = 1, keepAllRes = F, mini.nb=c(10L, 200))
+  }
+  else if (initialisation_algorithm=="random") {
+    fit <- HDclassif::hddc(x, K = k, model = c("AkjBkQkDk"), threshold = 0.2,
+                           itermax = itmax, eps = epsilon,
+                           algo = "EM", d_select = "Cattell", init = "param",
+                           show = FALSE,  scaling = FALSE, mc.cores=mc.cores, # alternatively
+                           min.individuals = 2, noise.ctrl = 1e-08, subset = Inf,
+                           nb.rep = 1, keepAllRes = F)
+  }
+  else { # only rebmix or hc will compile
+    start <- initialize_em_multivariate(x = x, k = k,
+                                        nstart = 10L, itmax = 200, epsilon = 10^-2,
+                                        initialisation_algorithm = initialisation_algorithm)
+    post_proba <- predict_posterior_probability(x, start)$eta
+    predicted_classes <- apply(post_proba, MARGIN = 1, which.max)
+
+    fit <- HDclassif::hddc(x, K = k, model = c("AkjBkQkDk"), threshold = 0.2,
+                           itermax = itmax, eps = epsilon,
+                           algo = "EM", d_select = "Cattell", init = "vector",
+                           show = FALSE,  scaling = FALSE, mc.cores=mc.cores, # alternatively
+                           min.individuals = 2, noise.ctrl = 1e-08, subset = Inf,
+                           nb.rep = 1, keepAllRes = F, init.vector = predicted_classes)
+  }
+
+
+
+
+
+
 
 
   # convert back to the original space
@@ -1090,7 +1127,7 @@ em_HDclassif_multivariate <- function(x = x, k = 2, initialisation_algorithm = "
   sigma <- array(0, dim=c(D, D, k))
   for (j in 1:k) {
     d_j <- ncol(fit$Q[[j]])
-    sigma[,,j] <- fit$Q[[j]] %*% diag(c(fit$a[j,1:d_j]-fit$b[j])) %*% t(fit$Q[[j]]) + fit$b[j] * diag(D)
+    sigma[,,j] <- fit$Q[[j]] %*% diag(c(fit$a[j,1:d_j]-fit$b[j]), nrow = d_j) %*% t(fit$Q[[j]]) + fit$b[j] * diag(D)
   }
 
   ### return an unique ordered parameter configuration
@@ -1103,7 +1140,7 @@ em_HDclassif_multivariate <- function(x = x, k = 2, initialisation_algorithm = "
 
 #' @rdname emnmix_multivariate
 #' @export
-em_pgmm_multivariate <- function(x = x, k = 2, initialisation_algorithm = "hc",
+em_pgmm_multivariate <- function(x = x, k = 2, initialisation_algorithm = "kmeans",
                                  itmax = 5000, epsilon = 10^-12, aic_acc=0.1, start = NULL,
                                  arguments_HDclassif=list(init= "kmeans",
                                                           kmeans.control=list(iter.max=200L, nstart=10L,
@@ -1145,7 +1182,7 @@ em_pgmm_multivariate <- function(x = x, k = 2, initialisation_algorithm = "hc",
 
 #' @rdname emnmix_multivariate
 #' @export
-em_EMMIXmfa_multivariate <- function(x = x, k = 2, initialisation_algorithm = "hc", conv_measure = 'diff',
+em_EMMIXmfa_multivariate <- function(x = x, k = 2, initialisation_algorithm = "kmeans", conv_measure = 'diff',
                                      itmax = 5000, epsilon = 10^-12, start = NULL, nkmeans = 10L,
                                      arguments_HDclassif=list(init= "kmeans",
                                                               kmeans.control=list(iter.max=200L, nstart=10L,
@@ -1164,8 +1201,30 @@ em_EMMIXmfa_multivariate <- function(x = x, k = 2, initialisation_algorithm = "h
     magrittr::extract2("d") %>% mean()
 
   # the fit itself
-  fit <- EMMIXmfa::mcfa(Y=x, g=k, q=d_j, itmax = itmax, nkmeans = nkmeans,
-                        tol = epsilon, conv_measure = conv_measure, warn_messages = FALSE)
+  if (initialisation_algorithm== "kmeans") {
+    suppressMessages(invisible(capture.output(
+      fit <- EMMIXmfa::mcfa(Y=x, g=k, q=d_j, itmax = itmax, nkmeans = nkmeans,
+                            tol = epsilon, conv_measure = conv_measure, warn_messages = FALSE))))
+  }
+  else if (initialisation_algorithm== "random") {
+    suppressMessages(invisible(capture.output(
+      fit <- EMMIXmfa::mcfa(Y=x, g=k, q=d_j, itmax = itmax, init_method = "rand-A", nrandom=10L,
+                            tol = epsilon, conv_measure = conv_measure, warn_messages = FALSE))))
+  }
+  else {
+    start <- initialize_em_multivariate(x = x, k = k,
+                                        nstart = 10L, itmax = 200, epsilon = 10^-2,
+                                        initialisation_algorithm = initialisation_algorithm)
+    post_proba <- predict_posterior_probability(x, start)$eta
+    predicted_classes <- apply(post_proba, MARGIN = 1, which.max)
+
+    suppressWarnings(suppressMessages(invisible(capture.output(
+      fit <- EMMIXmfa::mcfa(Y=x, g=k, q=d_j, itmax = itmax, init_clust = predicted_classes %>% as.factor(),
+                            tol = epsilon, conv_measure = conv_measure, warn_messages = FALSE)))))
+  }
+
+
+
 
   p <- c(fit$pivec); mu <- fit$A %*% fit$xi; D <- ncol(x)
   sigma <- array(0, dim = c(D, D, k))
@@ -1195,7 +1254,7 @@ em_EMMIXmfa_multivariate <- function(x = x, k = 2, initialisation_algorithm = "h
 
 #' @rdname emnmix_univariate
 #' @export
-em_otrimle <- function(x = x, k = 2, initialisation_algorithm = "hc",
+em_otrimle <- function(x = x, k = 2, initialisation_algorithm = "kmeans",
                        itmax = 5000, epsilon = 10^-12, ...) {
   if (initialisation_algorithm == "hc") {
     start <- otrimle::InitClust(as.matrix(x), G = 2, modelName = "V")

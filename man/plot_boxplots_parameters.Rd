@@ -9,7 +9,8 @@ plot_boxplots_parameters(
   true_theta,
   remove_outliers = T,
   size_tag = 4,
-  num_col = length(true_theta$p)
+  num_col = length(true_theta$p),
+  match_symbol = "^p[[:digit:]]+|mu|sigma|sd"
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ plot_boxplots_parameters(
 \item{size_tag}{in each facet, controls the size of the parameter emphasised}
 
 \item{num_col}{How to organise the facets? by default according to the number of components}
+
+\item{match_symbol}{To discard the set of parameters you want to be removed}
 }
 \value{
 boxplot_parameters a ggplot object representing the boxplot distributions of the estimates per package and initialisation package
