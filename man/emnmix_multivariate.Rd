@@ -70,7 +70,7 @@ em_flexmix_multivariate(
 em_mixtools_multivariate(
   x = x,
   k = 2,
-  initialisation_algorithm = "hc",
+  initialisation_algorithm = "kmeans",
   itmax = 5000,
   epsilon = 10^-12,
   start = NULL,
@@ -80,7 +80,7 @@ em_mixtools_multivariate(
 em_mclust_multivariate(
   x = x,
   k = 2,
-  initialisation_algorithm = "hc",
+  initialisation_algorithm = "kmeans",
   start = NULL,
   itmax = 5000,
   epsilon = 10^-12,
@@ -90,7 +90,7 @@ em_mclust_multivariate(
 em_GMKMcharlie_multivariate(
   x = x,
   k = 2,
-  initialisation_algorithm = "hc",
+  initialisation_algorithm = "kmeans",
   embedNoise = 1e-06,
   itmax = 5000,
   epsilon = 10^-12,
@@ -102,7 +102,7 @@ em_GMKMcharlie_multivariate(
 em_clustvarsel_multivariate(
   x = x,
   k = 2,
-  initialisation_algorithm = "hc",
+  initialisation_algorithm = "kmeans",
   itmax = 5000,
   epsilon = 10^-12,
   back_steps = 20,
@@ -113,11 +113,10 @@ em_clustvarsel_multivariate(
 em_HDclassif_multivariate(
   x = x,
   k = 2,
-  initialisation_algorithm = "hc",
+  initialisation_algorithm = "kmeans",
   itmax = 5000,
   epsilon = 10^-12,
   start = NULL,
-  init = "kmeans",
   kmeans.control = list(iter.max = 200L, nstart = 10L, algorithm = "Hartigan-Wong"),
   mc.cores = getOption("mc.cores", parallel::detectCores())
 )
@@ -125,7 +124,7 @@ em_HDclassif_multivariate(
 em_pgmm_multivariate(
   x = x,
   k = 2,
-  initialisation_algorithm = "hc",
+  initialisation_algorithm = "kmeans",
   itmax = 5000,
   epsilon = 10^-12,
   aic_acc = 0.1,
@@ -138,7 +137,7 @@ em_pgmm_multivariate(
 em_EMMIXmfa_multivariate(
   x = x,
   k = 2,
-  initialisation_algorithm = "hc",
+  initialisation_algorithm = "kmeans",
   conv_measure = "diff",
   itmax = 5000,
   epsilon = 10^-12,

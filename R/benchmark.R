@@ -3,6 +3,7 @@
 #' @author Bastien CHASSAGNOL
 #'
 #' @param mixture_functions List of the packages to be compared (Id:name of the package, value: its options)
+#' @param id_scenario Possibility to set it to another number than one, to uniquely identify them
 #' @param sigma_values,mean_values,proportions the true parameters to be retrieved
 #' @param prop_outliers the proportion of outliers added in the simulation
 #' @param nobservations the number of observations drawn to generate the random sample
@@ -23,8 +24,8 @@
 #'
 #' @export
 
-benchmark_univariate_GMM_estimation <- function(mixture_functions, cores = getOption("mc.cores", parallel::detectCores()),
-                                                sigma_values, mean_values, proportions,
+benchmark_univariate_GMM_estimation <- function(mixture_functions, sigma_values, mean_values, proportions,
+                                                cores = getOption("mc.cores", parallel::detectCores()), id_scenario=NULL,
                                                 prop_outliers = 0, nobservations = c(2000),
                                                 Nbootstrap = 100, epsilon = 10^-6, itmax = 1000,
                                                 nstart = 10L, short_iter = 200, short_eps = 10^-2, prior_prob = 0.05,
@@ -36,7 +37,7 @@ benchmark_univariate_GMM_estimation <- function(mixture_functions, cores = getOp
   ##     name variables for storing parameters distribution      ##
   #################################################################
   id_tibble <- tibble::tibble()
-  id_scenario <- 1
+  if (is.null(id_scenario)) id_scenario <- 1 # to uniquely identify each run
   distribution_parameters <- tibble::tibble() # store empirical bootstrap distribution of the estimates
   local_scores <- tibble::tibble() # store bias and mse for each parameter
 
@@ -56,11 +57,9 @@ benchmark_univariate_GMM_estimation <- function(mixture_functions, cores = getOp
           pairwise_ovl <- compute_average_overlap(true_theta) %>% signif(digits = 2)
           entropy_value <- compute_shannon_entropy(p) %>% signif(digits = 2) # compute entropy
 
-          for (n in nobservations) {
-            message(paste(
-              "We aim at learning the following estimates: \n",
-              paste0(bootstrap_colnames, ": ", formatted_true_theta, collapse = " // "), "with", n, "nobservations."
-            ))
+          for (i in seq_along(nobservations)) {
+            n <- nobservations[i]; letter_id <- letters[i]
+            message(paste("We are at scenario ID:", paste0(id_scenario, letter_id), ".\n"))
 
             distribution_parameters_per_config <- parallel::mclapply(1:Nbootstrap, function(t) {
               distribution_parameters_per_run <- tibble::tibble()
@@ -126,36 +125,35 @@ benchmark_univariate_GMM_estimation <- function(mixture_functions, cores = getOp
             #################################################################
             ##     summarize results obtained per scenario configuration   ##
             #################################################################
-            id_tibble <- id_tibble %>% dplyr::bind_rows(tibble::tibble(
-              ID = id_scenario, OVL = balanced_ovl, entropy = entropy_value,
-              OVL_pairwise = pairwise_ovl, nobservations = n, prop_outliers = prop_out,
+            iid_tibble_temp <- tibble::tibble(
+              ID = paste0(id_scenario, letter_id), OVL = balanced_ovl, entropy = entropy_value,
+              OVL_pairwise = pairwise_ovl, nobservations = n, prop_outliers = 0,
               formatted_true_parameters = list(as.list(formatted_true_theta)),
-              true_parameters = list(as.list(true_theta))
-            ))
+              true_parameters = list(as.list(true_theta)))
+            id_tibble <- id_tibble %>% dplyr::bind_rows(id_tibble_temp)
 
-            distribution_parameters_per_config <- distribution_parameters_per_config %>% tibble::add_column(ID = id_scenario)
+
+            distribution_parameters_per_config <- distribution_parameters_per_config %>% tibble::add_column(ID = paste0(id_scenario, letter_id))
             distribution_parameters <- distribution_parameters %>% dplyr::bind_rows(distribution_parameters_per_config)
+
+
             local_scores_temp <- distribution_parameters_per_config %>%
               dplyr::group_by(dplyr::across(c("initialisation_method", "package"))) %>%
-              # dplyr::group_by(.data$initialisation_method, .data$package) %>%
               dplyr::summarize(get_local_scores(dplyr::cur_data() %>%
-                dplyr::select(dplyr::all_of(bootstrap_colnames)), formatted_true_theta)) %>%
-              tibble::add_column(ID = id_scenario)
+                                                  dplyr::select(dplyr::all_of(bootstrap_colnames)), formatted_true_theta)) %>%
+              tibble::add_column(ID = paste0(id_scenario, letter_id))
             local_scores <- local_scores %>% dplyr::bind_rows(local_scores_temp)
 
             # store temporary results
-            filename <- paste0("Nobservations_", n, paste0(names(formatted_true_theta), formatted_true_theta, collapse = "_"), ".rds")
             dir.create("./results", showWarnings = F, recursive = T)
-            saveRDS(
-              list(
-                distribution = distribution_parameters_per_config, local_scores = local_scores_temp,
-                config = id_tibble %>% dplyr::filter(.data$ID == id_scenario)
-              ),
-              file.path("./results", filename)
-            )
-            message("One configuration of parameter has been fully completed.\n\n")
-            id_scenario <- id_scenario + 1
+            saveRDS(list(
+              distribution = distribution_parameters_per_config,
+              local_scores = local_scores_temp,
+              config = id_tibble_temp),
+              file.path("./results", paste0("ID_scenario_", paste0(id_scenario, letter_id), ".rds")))
           } # number of observations
+          message(paste("Scenario", id_scenario, "has been achieved, with the whole setting of observations.\n"))
+          id_scenario <- id_scenario + 1
         }
       }
     }
@@ -169,7 +167,7 @@ benchmark_univariate_GMM_estimation <- function(mixture_functions, cores = getOp
 #' @export
 
 benchmark_multivariate_GMM_estimation <- function(mixture_functions, mean_values, proportions, sigma_values,
-                                                  cores = getOption("mc.cores", parallel::detectCores()),
+                                                  id_scenario = NULL, cores = getOption("mc.cores", parallel::detectCores()),
                                                   nobservations = c(2000), Nbootstrap = 100, epsilon = 10^-6, itmax = 1000,
                                                   nstart = 10L, short_iter = 200, short_eps = 10^-2, prior_prob = 0.05,
                                                   initialisation_algorithms = c("kmeans", "random", "hc", "rebmix")) {
@@ -179,7 +177,8 @@ benchmark_multivariate_GMM_estimation <- function(mixture_functions, mean_values
   #################################################################
   ##     name variables for storing parameters distribution      ##
   #################################################################
-  id_tibble <- tibble::tibble();   id_scenario <- 1
+  id_tibble <- tibble::tibble();
+  if (is.null(id_scenario)) id_scenario <- 1 # to uniquely identify each run
   distribution_parameters <- tibble::tibble() # store empirical bootstrap distribution of the estimates
   local_scores <- tibble::tibble() # store bias and mse for each parameter
 
@@ -200,8 +199,9 @@ benchmark_multivariate_GMM_estimation <- function(mixture_functions, mean_values
         entropy_value <- compute_shannon_entropy(p) %>% signif(digits = 2) # compute entropy
 
 
-        for (n in nobservations) {
-          message(paste("We are at scenario ID:", id_scenario))
+        for (i in seq_along(nobservations)) {
+          n <- nobservations[i]; letter_id <- letters[i]
+          message(paste("We are at scenario ID:", paste0(id_scenario, letter_id), ".\n"))
           # distribution_parameters_per_config <- tibble::tibble()
           # for (t in 1:Nbootstrap) {
           distribution_parameters_per_config <- parallel::mclapply(1:Nbootstrap, function(t) {
@@ -249,9 +249,9 @@ benchmark_multivariate_GMM_estimation <- function(mixture_functions, mean_values
                       )
                     },
                     error = function(e) {
-                      print(e); dir.create("./errors", showWarnings = FALSE, recursive = T)
+                      dir.create("./errors", showWarnings = FALSE, recursive = T)
                       saveRDS(list(x=simulated_distribution$x, k= simulated_distribution$k,
-                                   epsilon = epsilon, itmax = itmax, start=start),
+                                   epsilon = epsilon, itmax = itmax, start=start, error=e),
                               file = paste0("./errors/scenario_", id_scenario, "_init_algo_", init_algo,
                                             "_package_name_", package_name, "_bootstrap_", t,".rds"))
                       return(e)
@@ -282,34 +282,35 @@ benchmark_multivariate_GMM_estimation <- function(mixture_functions, mean_values
           #################################################################
           ##     summarize results obtained per scenario configuration   ##
           #################################################################
-          id_tibble <- id_tibble %>% dplyr::bind_rows(tibble::tibble(
-            ID = id_scenario, OVL = balanced_ovl, entropy = entropy_value,
+          id_tibble_temp <- tibble::tibble(
+            ID = paste0(id_scenario, letter_id), OVL = balanced_ovl, entropy = entropy_value,
             OVL_pairwise = pairwise_ovl, nobservations = n, prop_outliers = 0,
             formatted_true_parameters = list(as.list(formatted_true_theta)),
-            true_parameters = list(as.list(true_theta))
-          ))
+            true_parameters = list(as.list(true_theta)))
+          id_tibble <- id_tibble %>% dplyr::bind_rows(id_tibble_temp)
 
-          distribution_parameters_per_config <- distribution_parameters_per_config %>% tibble::add_column(ID = id_scenario)
+
+          distribution_parameters_per_config <- distribution_parameters_per_config %>% tibble::add_column(ID = paste0(id_scenario, letter_id))
           distribution_parameters <- distribution_parameters %>% dplyr::bind_rows(distribution_parameters_per_config)
+
+
           local_scores_temp <- distribution_parameters_per_config %>%
             dplyr::group_by(dplyr::across(c("initialisation_method", "package"))) %>%
             dplyr::summarize(get_local_scores(dplyr::cur_data() %>%
                                                 dplyr::select(dplyr::all_of(bootstrap_colnames)), formatted_true_theta)) %>%
-            tibble::add_column(ID = id_scenario)
+            tibble::add_column(ID = paste0(id_scenario, letter_id))
           local_scores <- local_scores %>% dplyr::bind_rows(local_scores_temp)
 
           # store temporary results
           dir.create("./results", showWarnings = F, recursive = T)
-          saveRDS(
-            list(
-              distribution = distribution_parameters_per_config, local_scores = local_scores_temp,
-              config = id_tibble %>% dplyr::filter(.data$ID == id_scenario)
-            ),
-            file.path("./results", paste0("ID_scenario_", id_scenario, ".rds"))
-          )
-          message("One configuration of parameter has been fully completed.\n\n")
-          id_scenario <- id_scenario + 1
+          saveRDS(list(
+              distribution = distribution_parameters_per_config,
+              local_scores = local_scores_temp,
+              config = id_tibble_temp),
+            file.path("./results", paste0("ID_scenario_", paste0(id_scenario, letter_id), ".rds")))
         } # number of observations
+        message(paste("Scenario", id_scenario, "has been achieved, with the whole setting of observations.\n"))
+        id_scenario <- id_scenario + 1
       }
     }
   } ##### theta configuration
@@ -325,6 +326,7 @@ benchmark_multivariate_GMM_estimation <- function(mixture_functions, mean_values
 #' @author Bastien CHASSAGNOL
 #'
 #' @param mixture_functions List of the packages to be compared (Id:name of the package, value: its options)
+#' @param id_scenario Possibility to set it to another number than one, to uniquely identify them
 #' @param sigma_values,mean_values,proportions the true parameters to be retrieved
 #' @param prop_outliers the proportion of outliers added in the simulation
 #' @param nobservations the number of observations drawn to generate the random sample
@@ -340,7 +342,7 @@ benchmark_multivariate_GMM_estimation <- function(mixture_functions, mean_values
 #' @export
 
 
-compute_microbenchmark_univariate <- function(mixture_functions,
+compute_microbenchmark_univariate <- function(mixture_functions, id_scenario = NULL,
                                               sigma_values, mean_values, proportions,
                                               cores = getOption("mc.cores", parallel::detectCores()),
                                               prop_outliers = 0, nobservations = c(100, 1000, 10000),
@@ -371,11 +373,9 @@ compute_microbenchmark_univariate <- function(mixture_functions,
             signif(digits = 2)
           entropy_value <- compute_shannon_entropy(p) %>% signif(digits = 2) # compute entropy
 
-          for (n in nobservations) {
-            message(paste(
-              "We aim at learning the following estimates: \n",
-              paste0(bootstrap_colnames, ": ", formatted_true_theta, collapse = " // "), "with", n, "nobservations."
-            ))
+          for (i in seq_along(nobservations)) {
+            n <- nobservations[i]; letter_id <- letters[i]
+            message(paste("We are at scenario ID:", paste0(id_scenario, letter_id), ".\n"))
             simulated_distribution <- simulate_univariate_GMM(n = n, theta = true_theta) # simulation of the experience
             time_configurations <- parallel::mclapply(1:Nbootstrap, function(t) {
               init_temp <- tibble::tibble()
@@ -465,15 +465,16 @@ compute_microbenchmark_univariate <- function(mixture_functions,
             time_data <- time_data %>% dplyr::bind_rows(time_data_temp)
           } # number of observations
 
-          # store temporary results
-          filename <- paste0(paste0(names(formatted_true_theta), formatted_true_theta, collapse = "_"), "time.rds")
+          # store temporary results (with all observations gathered this time)
           dir.create("./results", showWarnings = F, recursive = T)
           saveRDS(list(
-            init_time_data = init_time_data_temp, time_data = time_data_temp,
-            config = id_tibble %>% dplyr::filter(.data$ID == id_scenario)
-          ), file.path("./results", filename))
+            init_time_data = init_time_data %>% dplyr::filter(.data$ID == id_scenario),
+            time_data = time_data %>% dplyr::filter(.data$ID == id_scenario),
+            config = id_tibble %>% dplyr::filter(.data$ID == id_scenario)),
+            file.path("./results", paste0("time_computation_ID_scenario_", id_scenario, ".rds")))
+
+          message(paste("Scenario", id_scenario, "has been achieved, with the whole setting of observations.\n"))
           id_scenario <- id_scenario + 1
-          message("\nOne configuration of parameter has been fully completed.\n\n")
         } # theta configuration
       }
     }
@@ -486,7 +487,7 @@ compute_microbenchmark_univariate <- function(mixture_functions,
 #' @export
 
 
-compute_microbenchmark_multivariate <- function(mixture_functions,
+compute_microbenchmark_multivariate <- function(mixture_functions, id_scenario = NULL,
                                                 sigma_values, mean_values, proportions,
                                                 cores = getOption("mc.cores", parallel::detectCores()),
                                                 nobservations = c(50, 100, 200, 500, 1000, 2000, 5000, 10000),
@@ -497,7 +498,8 @@ compute_microbenchmark_multivariate <- function(mixture_functions,
   #################################################################
   ##     name variables for storing parameters distribution      ##
   #################################################################
-  id_tibble <- tibble::tibble();   id_scenario <- 1
+  id_tibble <- tibble::tibble();
+  if (is.null(id_scenario)) id_scenario <- 1 # to uniquely identify each run
   time_data <- tibble::tibble();   init_time_data <- tibble::tibble()
   for (p in proportions) {
     for (mu in mean_values) {
@@ -512,8 +514,9 @@ compute_microbenchmark_multivariate <- function(mixture_functions,
         balanced_ovl <- compute_average_overlap(true_theta %>% magrittr::inset2("p", rep(1 / k, k))) %>% signif(digits = 2)
         pairwise_ovl <- compute_average_overlap(true_theta) %>% signif(digits = 2)
         entropy_value <- compute_shannon_entropy(p) %>% signif(digits = 2) # compute entropy
-        message(paste("We are at scenario ID:", id_scenario))
-        for (n in nobservations) {
+        for (i in seq_along(nobservations)) {
+          n <- nobservations[i]; letter_id <- letters[i]
+          message(paste("We are at scenario ID:", paste0(id_scenario, letter_id), ".\n"))
           simulated_distribution <- simulate_multivariate_GMM(n = n, theta = true_theta) # simulation of the experience
           time_configurations <- parallel::mclapply(1:Nbootstrap, function(t) {
             init_temp <- tibble::tibble(); mbm_temp <- tibble::tibble() # store intermediate computations
@@ -529,7 +532,7 @@ compute_microbenchmark_multivariate <- function(mixture_functions,
                   )
                 },
                 error = function(e) {
-                  print(e); return(e)
+                  return(e)
                 }
               )
 
@@ -599,6 +602,7 @@ compute_microbenchmark_multivariate <- function(mixture_functions,
             purrr::map_dfr("mbm_temp") %>%
             dplyr::mutate(ID = id_scenario, nobservations = n)
           time_data <- time_data %>% dplyr::bind_rows(time_data_temp)
+          message(paste("\nScenario ID:", id_scenario,"with n=", n, "has been carried out.\n"))
 
         } # number of observations
 
@@ -616,8 +620,8 @@ compute_microbenchmark_multivariate <- function(mixture_functions,
           config = id_tibble %>% dplyr::filter(.data$ID == id_scenario)),
           file.path("./results", paste0("time_computation_ID_scenario_", id_scenario, ".rds")))
 
+        message(paste("Scenario", id_scenario, "has been achieved, with the whole setting of observations.\n"))
         id_scenario <- id_scenario + 1
-        message("\nOne configuration achieved, with the whole setting of observations.\n\n")
       } # theta configuration
     }
   }

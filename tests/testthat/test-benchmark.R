@@ -182,15 +182,17 @@ test_that("HD multivariate benchmark", {
   theta_low_OVL_balanced_eccentric_formatted <- list(p=theta_low_OVL_balanced_eccentric$Pi,
                                                      mu=t(theta_low_OVL_balanced_eccentric$Mu),
                                                      sigma=theta_low_OVL_balanced_eccentric$S)
+
+
   HD_low_OVL_distribution_parameters <- benchmark_multivariate_GMM_estimation(
-    epsilon = 10^-4, itmax = 100,
+    epsilon = 10^-4, itmax = 20,
     mixture_functions = list("EMMIXmfa" = list(name_fonction = em_EMMIXmfa_multivariate, list_params = list()),
                              "HDclassif" = list(name_fonction = em_HDclassif_multivariate, list_params = list())),
     initialisation_algorithms = c("kmeans", "hc"),
     sigma_values = list(theta_low_OVL_balanced_eccentric_formatted$sigma),
     mean_values = list(theta_low_OVL_balanced_eccentric_formatted$mu),
     proportions = list(theta_low_OVL_balanced_eccentric_formatted$p),
-    Nbootstrap = 10, nobservations = c(200))
+    Nbootstrap = 1, nobservations = c(100, 200))
 
 
   multivariate_time_computations <- compute_microbenchmark_multivariate (

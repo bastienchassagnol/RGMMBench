@@ -180,8 +180,6 @@ initialize_em_univariate <- function(x = NULL, k = 2, nstart = 10L, short_iter =
       # degenerate case, often caused by the presence of an outlier. In that situation,
       # it gets impossible to perform supervised estimation, and we replace it instead with
       # an ad-hoc technics, adding artificially noisy probability on each cluster assignment
-      warning(glue::glue("The hc algorithm returns a clustering where at least in one cluster,
-                         there is only one obbservation"))
       z <- mclust::unmap(s) # a n * k table, acting as indicator of belonging for each cluster
       z[z == 1] <- 1 - prior_prob * (k - 1)
       z[z == 0] <- prior_prob # non-assigned class get by default a minimal probability value
@@ -253,14 +251,16 @@ initialize_em_multivariate <- function(x, k = 2, nstart = 10L, short_iter = 200,
                          iter.max = short_iter, algorithm = "Hartigan-Wong")
     estimated_theta <- estimate_supervised_multivariate_GMM(x = x, s = fit$cluster, k = k)
   } else if (initialisation_algorithm == "random") {
-    all_logs <- lapply(1:nstart, function(y) {
-      fit <- EMCluster::simple.init(x, nclass = k)
-      logLikelihood_per_random <- EMCluster::logL(x, fit)
-      return(list(parameters = fit, logLikelihood = logLikelihood_per_random))
-    })
+    # all_logs <- lapply(1:nstart, function(y) {
+    #   fit <- EMCluster::simple.init(x, nclass = k)
+    #   logLikelihood_per_random <- EMCluster::logL(x, fit)
+    #   return(list(parameters = fit, logLikelihood = logLikelihood_per_random))
+    # })
+    # best_model <- which.max(all_logs %>% purrr::map_dbl("logLikelihood"))
+    # fit <- purrr::map(all_logs, "parameters")[[best_model]]
 
-    best_model <- which.max(all_logs %>% purrr::map_dbl("logLikelihood"))
-    fit <- purrr::map(all_logs, "parameters")[[best_model]]
+    EMC <- EMCluster::.EMC.Rnd; EMC$n.candidate <- nstart
+    fit <- EMCluster::rand.EM(x, nclass = k, min.n=2, EMC=EMC)
     estimated_theta <- list(
       p = fit$pi, mu = t(fit$Mu),
       sigma = trig_mat_to_array(fit$LTSigma)
@@ -273,8 +273,6 @@ initialize_em_multivariate <- function(x, k = 2, nstart = 10L, short_iter = 200,
       # degenerate case, often caused by the presence of an outlier. In that situation,
       # it gets impossible to perform supervised estimation, and we replace it instead with
       # an ad-hoc technics, adding artificially noisy probability on each cluster assignment
-      warning(glue::glue("The hc algorithm returns a clustering with only one component,
-                         with initial distribution."))
       saveRDS(list("distribution" = x, "k" = k), glue::glue("./errors/hc_clustering_error.rds"))
       z <- mclust::unmap(s) # a n * k table, acting as indicator of belonging for each cluster
       z[z == 1] <- 1 - prior_prob * (k - 1)
@@ -336,7 +334,7 @@ initialize_em_multivariate <- function(x, k = 2, nstart = 10L, short_iter = 200,
       file = glue::glue("./errors/initialisation_failures/init_algo_{initialisation_algorithm}_error.rds")
     )
     stop("Parameters learnt from the initiation algorithm are inconsistent with the number of clusters required,
-             likely to come from rebmix overestimating the number of clusters")
+             likely to come from rebmix overestimating the number of clusters.\n")
   }
   return(ordered_estimated_theta)
 }
@@ -1209,7 +1207,7 @@ em_EMMIXmfa_multivariate <- function(x = x, k = 2, initialisation_algorithm = "k
   else if (initialisation_algorithm== "random") {
     suppressMessages(invisible(capture.output(
       fit <- EMMIXmfa::mcfa(Y=x, g=k, q=d_j, itmax = itmax, init_method = "rand-A", nrandom=10L,
-                            tol = epsilon, conv_measure = conv_measure, warn_messages = FALSE))))
+                            tol = epsilon, conv_measure = conv_measure, warn_messages = FALSE, nkmeans = 1))))
   }
   else {
     start <- initialize_em_multivariate(x = x, k = k,
@@ -1220,7 +1218,7 @@ em_EMMIXmfa_multivariate <- function(x = x, k = 2, initialisation_algorithm = "k
 
     suppressWarnings(suppressMessages(invisible(capture.output(
       fit <- EMMIXmfa::mcfa(Y=x, g=k, q=d_j, itmax = itmax, init_clust = predicted_classes %>% as.factor(),
-                            tol = epsilon, conv_measure = conv_measure, warn_messages = FALSE)))))
+                            tol = epsilon, conv_measure = conv_measure, warn_messages = FALSE, nkmeans = 1)))))
   }
 
 
@@ -1468,35 +1466,34 @@ check_parameters_validity_multivariate <- function(theta, k = length(theta$p)) {
   dimension_gaussian <- dim(mu)[1]
 
   if (any(is.na(unlist(theta))) | length(unlist(theta)) == 0) {
-    warning("NA values or no output from the estimation")
+    warning("NA values or no output from the estimation. \n")
     is_valid_parametrisation <- FALSE
   }
 
   # check the parametrisation of proportions (sum-to-one constraint)
   if ((1 - sum(p)) > machine_limit | any(p < machine_limit) | any(p > 1 - machine_limit)) {
-    warning("One at least of your proportions does not enforce the sum-to-one constraint")
+    warning("One at least of your proportions does not enforce the sum-to-one constraint. \n")
     is_valid_parametrisation <- FALSE
   }
 
   # check parametrisation of means
   if (!identical(dim(mu), c(dimension_gaussian, k)) | any(c(mu) > machine_max)) {
-    warning("The mean parameter must be of dimension ndim * k, with k the number of clusters")
+    warning("The mean parameter must be of dimension ndim * k, with k the number of clusters. \n")
     is_valid_parametrisation <- FALSE
   }
 
   # check the parametrisation of covariance
   if (!identical(dim(sigma), c(dimension_gaussian, dimension_gaussian, k)) | any(c(sigma) > machine_max)) {
-    warning("the covariance array stores for each component a variance matrix of fixed size k")
     is_valid_parametrisation <- FALSE
   } else {
     for (j in 1:k) {
       if (!is_positive_definite(sigma[, , j])) {
-        warning(glue::glue("Covariance matrix for component {j} is not positive definite"))
+        warning(glue::glue("Covariance matrix for component {j} is not positive definite.\n"))
         is_valid_parametrisation <- FALSE
         break
       }
       if (!isSymmetric(sigma[, , j])) {
-        warning(glue::glue("Covariance matrix for component {j} is not symmetric"))
+        warning(glue::glue("Covariance matrix for component {j} is not symmetric. \n"))
         is_valid_parametrisation <- FALSE
         break
       }

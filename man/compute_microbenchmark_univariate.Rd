@@ -7,6 +7,7 @@
 \usage{
 compute_microbenchmark_univariate(
   mixture_functions,
+  id_scenario = NULL,
   sigma_values,
   mean_values,
   proportions,
@@ -25,6 +26,7 @@ compute_microbenchmark_univariate(
 
 compute_microbenchmark_multivariate(
   mixture_functions,
+  id_scenario = NULL,
   sigma_values,
   mean_values,
   proportions,
@@ -42,6 +44,8 @@ compute_microbenchmark_multivariate(
 }
 \arguments{
 \item{mixture_functions}{List of the packages to be compared (Id:name of the package, value: its options)}
+
+\item{id_scenario}{Possibility to set it to another number than one, to uniquely identify them}
 
 \item{sigma_values, mean_values, proportions}{the true parameters to be retrieved}
 

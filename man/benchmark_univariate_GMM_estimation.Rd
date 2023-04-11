@@ -7,10 +7,11 @@
 \usage{
 benchmark_univariate_GMM_estimation(
   mixture_functions,
-  cores = getOption("mc.cores", parallel::detectCores()),
   sigma_values,
   mean_values,
   proportions,
+  cores = getOption("mc.cores", parallel::detectCores()),
+  id_scenario = NULL,
   prop_outliers = 0,
   nobservations = c(2000),
   Nbootstrap = 100,
@@ -28,6 +29,7 @@ benchmark_multivariate_GMM_estimation(
   mean_values,
   proportions,
   sigma_values,
+  id_scenario = NULL,
   cores = getOption("mc.cores", parallel::detectCores()),
   nobservations = c(2000),
   Nbootstrap = 100,
@@ -43,9 +45,11 @@ benchmark_multivariate_GMM_estimation(
 \arguments{
 \item{mixture_functions}{List of the packages to be compared (Id:name of the package, value: its options)}
 
+\item{sigma_values, mean_values, proportions}{the true parameters to be retrieved}
+
 \item{cores}{the number of cores to be used, by default all the available cores}
 
-\item{sigma_values, mean_values, proportions}{the true parameters to be retrieved}
+\item{id_scenario}{Possibility to set it to another number than one, to uniquely identify them}
 
 \item{prop_outliers}{the proportion of outliers added in the simulation}
 

@@ -67,7 +67,7 @@ em_flexmix_univariate(
 em_mixtools_univariate(
   x = x,
   k = 2,
-  initialisation_algorithm = "hc",
+  initialisation_algorithm = "kmeans",
   itmax = 5000,
   epsilon = 10^-12,
   start = NULL,
@@ -77,7 +77,7 @@ em_mixtools_univariate(
 em_mclust_univariate(
   x = x,
   k = 2,
-  initialisation_algorithm = "hc",
+  initialisation_algorithm = "kmeans",
   start = NULL,
   itmax = 5000,
   epsilon = 10^-12,
@@ -87,7 +87,7 @@ em_mclust_univariate(
 em_GMKMcharlie_univariate(
   x = x,
   k = 2,
-  initialisation_algorithm = "hc",
+  initialisation_algorithm = "kmeans",
   embedNoise = 1e-06,
   itmax = 5000,
   epsilon = 10^-12,
@@ -99,7 +99,7 @@ em_GMKMcharlie_univariate(
 em_otrimle(
   x = x,
   k = 2,
-  initialisation_algorithm = "hc",
+  initialisation_algorithm = "kmeans",
   itmax = 5000,
   epsilon = 10^-12,
   ...
