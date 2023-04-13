@@ -11,6 +11,8 @@ License: MIT + file LICENSE
 Depends: 
     R (>= 4.0.0)
 Imports: 
+    ade4,
+    adegraphics,
     bgmm,
     clustvarsel,
     ComplexHeatmap,
@@ -18,7 +20,9 @@ Imports:
     dplyr,
     egg,
     EMCluster,
+    factoextra,
     flexmix,
+    GGally,
     ggplot2,
     glue,
     GMKMcharlie,

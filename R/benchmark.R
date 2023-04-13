@@ -27,7 +27,7 @@
 benchmark_univariate_GMM_estimation <- function(mixture_functions, sigma_values, mean_values, proportions,
                                                 cores = getOption("mc.cores", parallel::detectCores()), id_scenario=NULL,
                                                 prop_outliers = 0, nobservations = c(2000),
-                                                Nbootstrap = 100, epsilon = 10^-6, itmax = 1000,
+                                                Nbootstrap = 100, epsilon = 10^-4, itmax = 500,
                                                 nstart = 10L, short_iter = 200, short_eps = 10^-2, prior_prob = 0.05,
                                                 initialisation_algorithms = c("kmeans", "quantiles", "random", "hc", "rebmix")) {
 
@@ -53,8 +53,8 @@ benchmark_univariate_GMM_estimation <- function(mixture_functions, sigma_values,
           formatted_true_theta <- true_theta %>% format_theta_output()
           k <- length(p)
           bootstrap_colnames <- names(formatted_true_theta)
-          balanced_ovl <- compute_average_overlap(true_theta %>% magrittr::inset2("p", rep(1 / k, k))) %>% signif(digits = 2)
-          pairwise_ovl <- compute_average_overlap(true_theta) %>% signif(digits = 2)
+          balanced_ovl <- MixSim::overlap(Pi=rep(1/k, k), Mu=t(true_theta$mu), S=as.array(true_theta$sigma))$MaxOmega %>% signif(digits = 2)
+          pairwise_ovl <- MixSim::overlap(Pi=true_theta$p, Mu=t(true_theta$mu), S=as.array(true_theta$sigma))$MaxOmega %>% signif(digits = 2)
           entropy_value <- compute_shannon_entropy(p) %>% signif(digits = 2) # compute entropy
 
           for (i in seq_along(nobservations)) {
@@ -112,7 +112,7 @@ benchmark_univariate_GMM_estimation <- function(mixture_functions, sigma_values,
                       missing_estimated_theta <- stats::setNames(unlist(missing_estimated_theta_list), bootstrap_colnames)
                       distribution_parameters_per_run <- distribution_parameters_per_run %>%
                         dplyr::bind_rows(tibble::tibble(
-                          package = package_name, initialisation_method = init_algo,
+                          package = package_name, initialisation_method = init_algo, nobservations=n,
                           tibble::as_tibble_row(missing_estimated_theta), N.bootstrap = t
                         ))
                     }
@@ -168,7 +168,7 @@ benchmark_univariate_GMM_estimation <- function(mixture_functions, sigma_values,
 
 benchmark_multivariate_GMM_estimation <- function(mixture_functions, mean_values, proportions, sigma_values,
                                                   id_scenario = NULL, cores = getOption("mc.cores", parallel::detectCores()),
-                                                  nobservations = c(2000), Nbootstrap = 100, epsilon = 10^-6, itmax = 1000,
+                                                  nobservations = c(2000), Nbootstrap = 100, epsilon = 10^-4, itmax = 500,
                                                   nstart = 10L, short_iter = 200, short_eps = 10^-2, prior_prob = 0.05,
                                                   initialisation_algorithms = c("kmeans", "random", "hc", "rebmix")) {
 
@@ -211,6 +211,7 @@ benchmark_multivariate_GMM_estimation <- function(mixture_functions, mean_values
               ##################################################################
               ##             estimation of the initial estimates             ##
               ##################################################################
+              print(paste("Init algo:", init_algo))
               good_initialisation <- tryCatch(
                 {
                   initial_estimates <- initialize_em_multivariate(
@@ -264,7 +265,7 @@ benchmark_multivariate_GMM_estimation <- function(mixture_functions, mean_values
                     # store distribution of the estimates
                     distribution_parameters_per_run <- distribution_parameters_per_run %>% dplyr::bind_rows(
                       tibble::tibble(
-                        package = package_name, initialisation_method = init_algo,
+                        package = package_name, initialisation_method = init_algo, nobservations=n,
                         tibble::as_tibble_row(missing_estimated_theta), N.bootstrap = t
                       )
                     )
@@ -346,7 +347,7 @@ compute_microbenchmark_univariate <- function(mixture_functions, id_scenario = N
                                               sigma_values, mean_values, proportions,
                                               cores = getOption("mc.cores", parallel::detectCores()),
                                               prop_outliers = 0, nobservations = c(100, 1000, 10000),
-                                              Nbootstrap = 100, epsilon = 10^-6, itmax = 1000,
+                                              Nbootstrap = 100, epsilon = 10^-4, itmax = 500,
                                               nstart = 10L, short_iter = 200, short_eps = 10^-2, prior_prob = 0.05,
                                               initialisation_algorithms = c("kmeans", "quantiles", "random", "hc", "rebmix")) {
 
@@ -491,7 +492,7 @@ compute_microbenchmark_multivariate <- function(mixture_functions, id_scenario =
                                                 sigma_values, mean_values, proportions,
                                                 cores = getOption("mc.cores", parallel::detectCores()),
                                                 nobservations = c(50, 100, 200, 500, 1000, 2000, 5000, 10000),
-                                                Nbootstrap = 100, epsilon = 10^-6, itmax = 1000,
+                                                Nbootstrap = 100, epsilon = 10^-4, itmax = 500,
                                                 nstart = 10L, short_iter = 200, short_eps = 10^-2, prior_prob = 0.05,
                                                 initialisation_algorithms = c("kmeans", "random", "hc", "rebmix")) {
 
@@ -511,8 +512,8 @@ compute_microbenchmark_multivariate <- function(mixture_functions, id_scenario =
         formatted_true_theta <- true_theta %>% format_theta_output()
         k <- length(p)
         bootstrap_colnames <- names(formatted_true_theta)
-        balanced_ovl <- compute_average_overlap(true_theta %>% magrittr::inset2("p", rep(1 / k, k))) %>% signif(digits = 2)
-        pairwise_ovl <- compute_average_overlap(true_theta) %>% signif(digits = 2)
+        balanced_ovl <- MixSim::overlap(Pi=rep(1/k, k), Mu=t(true_theta$mu), S=as.array(true_theta$sigma))$MaxOmega %>% signif(digits = 2)
+        pairwise_ovl <- MixSim::overlap(Pi=true_theta$p, Mu=t(true_theta$mu), S=as.array(true_theta$sigma))$MaxOmega %>% signif(digits = 2)
         entropy_value <- compute_shannon_entropy(p) %>% signif(digits = 2) # compute entropy
         for (i in seq_along(nobservations)) {
           n <- nobservations[i]; letter_id <- letters[i]

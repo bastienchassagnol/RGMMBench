@@ -145,7 +145,7 @@ test_that("HD visualisation", {
   correlation_scores <- plot_correlation_Heatmap(HD_parameters_distribution %>% filter(ID == 1))
 
 
-  HD_density_distribution <- plot_HD_density_distribution(true_theta, ade_plot = F, nobservations = 200)
+  HD_density_distribution <- plot_HD_density_distribution(true_theta, nobservations = 200)
   ggsave(testthat::test_path("results", "HD_second_representation_test.pdf"), HD_density_distribution,
          width = 20, height = 16,dpi = 600)
 

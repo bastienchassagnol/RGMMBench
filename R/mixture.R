@@ -330,11 +330,11 @@ initialize_em_multivariate <- function(x, k = 2, nstart = 10L, short_iter = 200,
   if (!check_parameters_validity_multivariate(ordered_estimated_theta)) {
     dir.create("./errors/initialisation_failures", showWarnings = F, recursive = T)
     saveRDS(
-      object = list(x = x, algo = initialisation_algorithm),
+      object = list(x = x, algo = initialisation_algorithm, k=k),
       file = glue::glue("./errors/initialisation_failures/init_algo_{initialisation_algorithm}_error.rds")
     )
-    stop("Parameters learnt from the initiation algorithm are inconsistent with the number of clusters required,
-             likely to come from rebmix overestimating the number of clusters.\n")
+    # stop("Parameters learnt from the initiation algorithm are inconsistent with the number of clusters required,
+    #          likely to come from rebmix overestimating the number of clusters, or from degenerate random.\n")
   }
   return(ordered_estimated_theta)
 }
@@ -373,7 +373,7 @@ initialize_em_multivariate <- function(x, k = 2, nstart = 10L, short_iter = 200,
 #'
 #' @export
 
-emnmix_univariate <- function(x, k, itmax = 5000, epsilon = 10^-12, nstart = 10L, start = NULL,
+emnmix_univariate <- function(x, k, epsilon = 10^-4, itmax = 500, nstart = 10L, start = NULL,
                               initialisation_algorithm = "kmeans", ...) {
 
   ### retrieve the initial configuration
@@ -458,7 +458,7 @@ emnmix_univariate <- function(x, k, itmax = 5000, epsilon = 10^-12, nstart = 10L
 #' fully unconstrained case, in the univariate dimension
 #'
 #' @export
-emnmix_multivariate <- function(x, k, itmax = 5000, epsilon = 10^-12, nstart = 10L, start = NULL,
+emnmix_multivariate <- function(x, k, epsilon = 10^-4, itmax = 500, nstart = 10L, start = NULL,
                                 initialisation_algorithm = "kmeans", ...) {
 
   ### retrieve the initial configuration
@@ -523,7 +523,7 @@ emnmix_multivariate <- function(x, k, itmax = 5000, epsilon = 10^-12, nstart = 1
 #' @importClassesFrom Rmixmod Strategy GaussianParameter
 #' @export
 em_Rmixmod_univariate <- function(x = x, k = 2, initialisation_algorithm = "kmeans",
-                                  itmax = 5000, epsilon = 10^-12, start = NULL, ...) {
+                                  epsilon = 10^-4, itmax = 500, start = NULL, ...) {
 
   # initialization section
   if (is.null(start)) {
@@ -565,7 +565,7 @@ em_Rmixmod_univariate <- function(x = x, k = 2, initialisation_algorithm = "kmea
 #' @rdname emnmix_multivariate
 #' @export
 em_Rmixmod_multivariate <- function(x = x, k = 2, initialisation_algorithm = "kmeans",
-                                    itmax = 5000, epsilon = 10^-12, start = NULL, ...) {
+                                    epsilon = 10^-4, itmax = 500, start = NULL, ...) {
 
   # initialization section
   if (is.null(start)) {
@@ -612,7 +612,7 @@ em_Rmixmod_multivariate <- function(x = x, k = 2, initialisation_algorithm = "km
 #' @rdname emnmix_univariate
 #' @export
 em_EMCluster_univariate <- function(x = x, k = 2, initialisation_algorithm = "kmeans",
-                                    itmax = 5000, epsilon = 10^-12, start = NULL, ...) {
+                                    epsilon = 10^-4, itmax = 500, start = NULL, ...) {
 
   # initialization section
   if (is.null(start)) {
@@ -644,7 +644,7 @@ em_EMCluster_univariate <- function(x = x, k = 2, initialisation_algorithm = "km
 #' @rdname emnmix_multivariate
 #' @export
 em_EMCluster_multivariate <- function(x = x, k = 2, initialisation_algorithm = "kmeans",
-                                      itmax = 5000, epsilon = 10^-12, start = NULL, ...) {
+                                      epsilon = 10^-4, itmax = 500, start = NULL, ...) {
 
   # initialization section
   if (is.null(start)) {
@@ -676,7 +676,7 @@ em_EMCluster_multivariate <- function(x = x, k = 2, initialisation_algorithm = "
 
 #' @rdname emnmix_univariate
 #' @export
-em_bgmm_univariate <- function(x = x, k = 2, itmax = 5000, epsilon = 10^-12,
+em_bgmm_univariate <- function(x = x, k = 2, epsilon = 10^-4, itmax = 500,
                                initialisation_algorithm = "kmeans", start = NULL, ...) {
 
   # initialization section
@@ -712,7 +712,7 @@ em_bgmm_univariate <- function(x = x, k = 2, itmax = 5000, epsilon = 10^-12,
 
 #' @rdname emnmix_multivariate
 #' @export
-em_bgmm_multivariate <- function(x = x, k = 2, itmax = 5000, epsilon = 10^-12,
+em_bgmm_multivariate <- function(x = x, k = 2, epsilon = 10^-4, itmax = 500,
                                  initialisation_algorithm = "kmeans", start = NULL, ...) {
 
   # initialization section
@@ -764,7 +764,7 @@ em_bgmm_multivariate <- function(x = x, k = 2, itmax = 5000, epsilon = 10^-12,
 
 #' @rdname emnmix_univariate
 #' @export
-em_flexmix_univariate <- function(x = x, k = 2, itmax = 5000, epsilon = 10^-12, minprior = 0.05,
+em_flexmix_univariate <- function(x = x, k = 2, epsilon = 10^-4, itmax = 500, minprior = 0.05,
                                   initialisation_algorithm = "kmeans", start = NULL, ...) {
 
   # initialization section
@@ -798,7 +798,7 @@ em_flexmix_univariate <- function(x = x, k = 2, itmax = 5000, epsilon = 10^-12, 
 
 #' @rdname emnmix_multivariate
 #' @export
-em_flexmix_multivariate <- function(x = x, k = 2, itmax = 5000, epsilon = 10^-12, minprior = 0.05,
+em_flexmix_multivariate <- function(x = x, k = 2, epsilon = 10^-4, itmax = 500, minprior = 0.05,
                                     initialisation_algorithm = "kmeans", start = NULL, ...) {
 
   # initialization section
@@ -843,7 +843,7 @@ em_flexmix_multivariate <- function(x = x, k = 2, itmax = 5000, epsilon = 10^-12
 #' @rdname emnmix_univariate
 #' @export
 em_mixtools_univariate <- function(x = x, k = 2, initialisation_algorithm = "kmeans",
-                                   itmax = 5000, epsilon = 10^-12, start = NULL, ...) {
+                                   epsilon = 10^-4, itmax = 500, start = NULL, ...) {
   # initialization section
   if (is.null(start)) {
     start <- initialize_em_univariate(
@@ -866,7 +866,7 @@ em_mixtools_univariate <- function(x = x, k = 2, initialisation_algorithm = "kme
 #' @rdname emnmix_multivariate
 #' @export
 em_mixtools_multivariate <- function(x = x, k = 2, initialisation_algorithm = "kmeans",
-                                     itmax = 5000, epsilon = 10^-12, start = NULL, ...) {
+                                     epsilon = 10^-4, itmax = 500, start = NULL, ...) {
   # initialization section
   if (is.null(start)) {
     start <- initialize_em_multivariate(
@@ -892,7 +892,7 @@ em_mixtools_multivariate <- function(x = x, k = 2, initialisation_algorithm = "k
 #' @rdname emnmix_univariate
 #' @export
 em_mclust_univariate <- function(x = x, k = 2, initialisation_algorithm = "kmeans", start = NULL,
-                                 itmax = 5000, epsilon = 10^-12, ...) {
+                                 epsilon = 10^-4, itmax = 500, ...) {
 
   # set relevant parameters to be done
   control <- mclust::emControl(tol = epsilon, itmax = itmax)
@@ -924,7 +924,7 @@ em_mclust_univariate <- function(x = x, k = 2, initialisation_algorithm = "kmean
 #' @rdname emnmix_multivariate
 #' @export
 em_mclust_multivariate <- function(x = x, k = 2, initialisation_algorithm = "kmeans", start = NULL,
-                                   itmax = 5000, epsilon = 10^-12, ...) {
+                                   epsilon = 10^-4, itmax = 500, ...) {
 
 
   # initialization section
@@ -969,7 +969,7 @@ em_mclust_multivariate <- function(x = x, k = 2, initialisation_algorithm = "kme
 #' @inheritParams GMKMcharlie::GM
 #' @export
 em_GMKMcharlie_univariate <- function(x = x, k = 2, initialisation_algorithm = "kmeans", embedNoise = 1e-6,
-                                      itmax = 5000, epsilon = 10^-12, start = NULL, parallel = FALSE, ...) {
+                                      epsilon = 10^-4, itmax = 500, start = NULL, parallel = FALSE, ...) {
   # initialization section
   if (is.null(start)) {
     start <- initialize_em_univariate(
@@ -1000,7 +1000,7 @@ em_GMKMcharlie_univariate <- function(x = x, k = 2, initialisation_algorithm = "
 #' @inheritParams GMKMcharlie::GM
 #' @export
 em_GMKMcharlie_multivariate <- function(x = x, k = 2, initialisation_algorithm = "kmeans", embedNoise = 1e-6,
-                                        itmax = 5000, epsilon = 10^-12, start = NULL, parallel = FALSE, ...) {
+                                        epsilon = 10^-4, itmax = 500, start = NULL, parallel = FALSE, ...) {
   # initialization section
   if (is.null(start)) {
     start <- initialize_em_multivariate(
@@ -1033,7 +1033,7 @@ em_GMKMcharlie_multivariate <- function(x = x, k = 2, initialisation_algorithm =
 #' @import clustvarsel
 #' @export
 em_clustvarsel_multivariate <- function(x = x, k = 2, initialisation_algorithm = "kmeans",
-                                        itmax = 5000, epsilon = 10^-12, back_steps=20, start = NULL, ...) {
+                                        epsilon = 10^-4, itmax = 500, back_steps=20, start = NULL, ...) {
 
   ###  Alternative process
   # first, retrieve the most relevant dimensions
@@ -1070,7 +1070,7 @@ em_clustvarsel_multivariate <- function(x = x, k = 2, initialisation_algorithm =
 #' @rdname emnmix_multivariate
 #' @export
 em_HDclassif_multivariate <- function(x = x, k = 2, initialisation_algorithm = "kmeans",
-                                      itmax = 5000, epsilon = 10^-12, start = NULL,
+                                      epsilon = 10^-4, itmax = 500, start = NULL,
                                       kmeans.control=list(iter.max=200L, nstart=10L, algorithm="Hartigan-Wong"),
                                       mc.cores=getOption("mc.cores", parallel::detectCores())) {
 
@@ -1139,7 +1139,7 @@ em_HDclassif_multivariate <- function(x = x, k = 2, initialisation_algorithm = "
 #' @rdname emnmix_multivariate
 #' @export
 em_pgmm_multivariate <- function(x = x, k = 2, initialisation_algorithm = "kmeans",
-                                 itmax = 5000, epsilon = 10^-12, aic_acc=0.1, start = NULL,
+                                 epsilon = 10^-4, itmax = 500, aic_acc=0.1, start = NULL,
                                  arguments_HDclassif=list(init= "kmeans",
                                                           kmeans.control=list(iter.max=200L, nstart=10L,
                                                                               algorithm="Hartigan-Wong"),
@@ -1181,7 +1181,7 @@ em_pgmm_multivariate <- function(x = x, k = 2, initialisation_algorithm = "kmean
 #' @rdname emnmix_multivariate
 #' @export
 em_EMMIXmfa_multivariate <- function(x = x, k = 2, initialisation_algorithm = "kmeans", conv_measure = 'diff',
-                                     itmax = 5000, epsilon = 10^-12, start = NULL, nkmeans = 10L,
+                                     epsilon = 10^-4, itmax = 500, start = NULL, nkmeans = 10L,
                                      arguments_HDclassif=list(init= "kmeans",
                                                               kmeans.control=list(iter.max=200L, nstart=10L,
                                                                                   algorithm="Hartigan-Wong"),
@@ -1200,14 +1200,14 @@ em_EMMIXmfa_multivariate <- function(x = x, k = 2, initialisation_algorithm = "k
 
   # the fit itself
   if (initialisation_algorithm== "kmeans") {
-    suppressMessages(invisible(capture.output(
-      fit <- EMMIXmfa::mcfa(Y=x, g=k, q=d_j, itmax = itmax, nkmeans = nkmeans,
-                            tol = epsilon, conv_measure = conv_measure, warn_messages = FALSE))))
+    suppressWarnings(suppressMessages(invisible(capture.output(
+      fit <- EMMIXmfa::mcfa(Y=x, g=k, q=d_j, itmax = itmax, nkmeans = 1,
+                            tol = epsilon, conv_measure = conv_measure, warn_messages = FALSE)))))
   }
   else if (initialisation_algorithm== "random") {
-    suppressMessages(invisible(capture.output(
+    suppressWarnings(suppressMessages(invisible(capture.output(
       fit <- EMMIXmfa::mcfa(Y=x, g=k, q=d_j, itmax = itmax, init_method = "rand-A", nrandom=10L,
-                            tol = epsilon, conv_measure = conv_measure, warn_messages = FALSE, nkmeans = 1))))
+                            tol = epsilon, conv_measure = conv_measure, warn_messages = FALSE, nkmeans = 1)))))
   }
   else {
     start <- initialize_em_multivariate(x = x, k = k,
@@ -1253,7 +1253,7 @@ em_EMMIXmfa_multivariate <- function(x = x, k = 2, initialisation_algorithm = "k
 #' @rdname emnmix_univariate
 #' @export
 em_otrimle <- function(x = x, k = 2, initialisation_algorithm = "kmeans",
-                       itmax = 5000, epsilon = 10^-12, ...) {
+                       epsilon = 10^-4, itmax = 500, ...) {
   if (initialisation_algorithm == "hc") {
     start <- otrimle::InitClust(as.matrix(x), G = 2, modelName = "V")
   } else {

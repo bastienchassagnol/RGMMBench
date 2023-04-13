@@ -238,7 +238,6 @@ test_that("GMM estimation in multivariate case", {
 
   HDclassif_multi_estimates <- em_HDclassif_multivariate(
     x = multivariate_simulation$x, k = 2,
-    itmax = 200, epsilon = 10^-6,
     start = NULL, initialisation_algorithm ="rebmix")
 
   EMMIXmfa_multi_estimates <- em_EMMIXmfa_multivariate(

@@ -520,10 +520,12 @@ plot_bivariate_normal_density_distribution <- function(true_theta, nobservations
 plot_HD_density_distribution <- function(true_theta, nobservations = 10^3,
                                          k = length(true_theta$p), ade_plot=FALSE) {
 
+  mypalette <- rainbow(k); D <- nrow(true_theta$mu)
   tibble_dataset <- purrr::map_dfr(1:k, function(j) {
     x_per_component <- MASS::mvrnorm(n = nobservations, mu = true_theta$mu[,j],
                                      Sigma = true_theta$sigma[, , j], empirical = FALSE)
-    tibble_per_component <- x_per_component %>% as_tibble() %>%
+    colnames(x_per_component) <- paste0("X", 1:D)
+    tibble_per_component <- x_per_component %>% tibble::as_tibble() %>%
       tibble::add_column(component=paste("Comp", j) %>% as.factor())
     return(tibble_per_component)
   })
@@ -531,7 +533,7 @@ plot_HD_density_distribution <- function(true_theta, nobservations = 10^3,
 
   pca1 <- ade4::dudi.pca(tibble_dataset %>% dplyr::select(-component),
                          scannf = FALSE, nf = 2, center=FALSE, scale=FALSE)
-  mypalette <- rainbow(k); D <- nrow(true_theta$mu)
+
   if (requireNamespace("adegraphics", quietly = TRUE) & ade_plot) {
     eigen_plot <- adegraphics::s1d.barchart(pca1$eig, p1d.horizontal = F,
                                             ppolygons.col = "blue", plot = F)
@@ -564,10 +566,15 @@ plot_HD_density_distribution <- function(true_theta, nobservations = 10^3,
   }
   else { # with ggplot object
     eigen_plot <- factoextra::fviz_eig(pca1, main=NULL, ggtheme = theme_bw(), addlabels = F) +
-      ggtitle(element_blank()) +
-      ylab("") +
+      ylab(latex2exp::TeX("$\\%$of explained variability")) +
       theme(plot.margin = unit(c(0, 0, 0, 0), "null"),
-            panel.spacing = unit(c(0, 0, 0, 0), "null"))
+            panel.spacing = unit(c(0, 0, 0, 0), "null")) +
+      labs(title = "Bivariate factor analysis projection",
+           subtitle = "Scree plot") +
+      theme(plot.title = element_text(size = 20, face = 'bold', hjust = 0.5, vjust = -0.1),
+            plot.subtitle = element_text(size = 16, face = 'italic'))
+
+
     indiv_plot <- factoextra::fviz_pca_biplot(pca1, # Individuals
                     geom.ind = "point",
                     fill.ind = tibble_dataset$component,
@@ -579,7 +586,9 @@ plot_HD_density_distribution <- function(true_theta, nobservations = 10^3,
       theme(axis.title = element_text(size = 14, face = 'bold'),
             axis.text = element_text(size = 14, face = 'bold')) +
       # hrbrthemes::theme_ipsum()+
-      coord_fixed()
+      coord_fixed() +
+      labs(subtitle = "Biplot projection") +
+      theme(plot.subtitle = element_text(size = 16, face = 'italic'))
 
     HD_dp <- cowplot::plot_grid(eigen_plot, indiv_plot,nrow=2, align = "hv", axis = "tblr")
 
@@ -601,16 +610,18 @@ plot_HD_density_distribution <- function(true_theta, nobservations = 10^3,
     #                     ymin = limits_ggplot$ymin + 0.6 * range_y, ymax = limits_ggplot$ymax)
   }
 
-  # generate parallel distirbution plots
+  # generate parallel distribution plots
   sampled_tibble_dataset <- tibble_dataset %>% dplyr::slice_sample(n=50)
   parallel_plot_unscaled <- GGally::ggparcoord(sampled_tibble_dataset, showPoints = T,
-             columns = 1:D, groupColumn = D + 1, scale="globalminmax", alphaLines = 0.3) +
+                                               columns = 1:D, groupColumn = D + 1, scale="globalminmax", alphaLines = 0.3) +
     scale_color_discrete(type=mypalette) +
     # hrbrthemes::theme_ipsum()+
     theme_bw() +
     labs(title = "Parallel Coordinate Plot",
          subtitle = "No scaling") +
-    xlab("") + ylab("")
+    xlab("Dimensions") + ylab("Parallel simulated coordinates") +
+    theme(plot.title = element_text(size = 20, face = 'bold', hjust = 0.5, vjust=-0.1),
+          plot.subtitle = element_text(size = 16, face = 'italic'))
 
 
   parallel_plot_scaled <- GGally::ggparcoord(sampled_tibble_dataset, showPoints = T,
@@ -621,7 +632,9 @@ plot_HD_density_distribution <- function(true_theta, nobservations = 10^3,
     labs(subtitle = "Univariately normalised") +
     theme_bw() +
     # hrbrthemes::theme_ipsum()
-    xlab("") + ylab("")
+    xlab("Dimensions") + ylab("Parallel simulated coordinates") +
+    theme(plot.subtitle = element_text(size = 16, face = 'italic'))
+
   parallel_plot <- cowplot::plot_grid(parallel_plot_unscaled, parallel_plot_scaled,
                                       align="hv", axis="tblr",nrow=2)
 
