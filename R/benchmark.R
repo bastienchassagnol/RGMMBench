@@ -49,7 +49,7 @@ benchmark_univariate_GMM_estimation <- function(mixture_functions, sigma_values,
           #################################################################
           ##               simulation scenario description               ##
           #################################################################
-          true_theta <- list(p = p, mu = mu, sigma = sigma)
+          true_theta <- list(p = p, mu = mu, sigma = sigma) %>% enforce_identifiability()
           formatted_true_theta <- true_theta %>% format_theta_output()
           k <- length(p)
           bootstrap_colnames <- names(formatted_true_theta)
@@ -188,7 +188,7 @@ benchmark_multivariate_GMM_estimation <- function(mixture_functions, mean_values
         #################################################################
         ##               simulation scenario description               ##
         #################################################################
-        true_theta <- list(p = p, mu = mu, sigma = sigma)
+        true_theta <- list(p = p, mu = mu, sigma = sigma) %>% enforce_identifiability()
         formatted_true_theta <- true_theta %>% format_theta_output()
         k <- length(p)
         bootstrap_colnames <- names(formatted_true_theta)
@@ -208,10 +208,10 @@ benchmark_multivariate_GMM_estimation <- function(mixture_functions, mean_values
             simulated_distribution <- simulate_multivariate_GMM(theta = true_theta, n = n) # simulation
             distribution_parameters_per_run <- tibble::tibble()
             for (init_algo in initialisation_algorithms) {
+              # print(paste("Initialisation algorithm:", init_algo))
               ##################################################################
               ##             estimation of the initial estimates             ##
               ##################################################################
-              print(paste("Init algo:", init_algo))
               good_initialisation <- tryCatch(
                 {
                   initial_estimates <- initialize_em_multivariate(
@@ -232,6 +232,7 @@ benchmark_multivariate_GMM_estimation <- function(mixture_functions, mean_values
                   # retrieve function values
                   mixture_function <- mixture_functions[[index]]$name_fonction
                   package_name <- names(mixture_functions)[index]
+                  # print(paste("Package:", package_name))
                   success_estimation <- tryCatch(
                     { # use of ternary operator structure
                       start <- if (any(isTRUE(all.equal(mixture_function, em_clustvarsel_multivariate)),
@@ -364,7 +365,7 @@ compute_microbenchmark_univariate <- function(mixture_functions, id_scenario = N
         for (sigma in sigma_values) { #################################################################
           ##               simulation scenario description               ##
           #################################################################
-          true_theta <- list(p = p, mu = mu, sigma = sigma)
+          true_theta <- list(p = p, mu = mu, sigma = sigma) %>% enforce_identifiability()
           formatted_true_theta <- true_theta %>% format_theta_output()
           k <- length(p)
           bootstrap_colnames <- names(formatted_true_theta)
@@ -508,7 +509,7 @@ compute_microbenchmark_multivariate <- function(mixture_functions, id_scenario =
         #################################################################
         ##               simulation scenario description               ##
         #################################################################
-        true_theta <- list(p = p, mu = mu, sigma = sigma)
+        true_theta <- list(p = p, mu = mu, sigma = sigma) %>% enforce_identifiability()
         formatted_true_theta <- true_theta %>% format_theta_output()
         k <- length(p)
         bootstrap_colnames <- names(formatted_true_theta)

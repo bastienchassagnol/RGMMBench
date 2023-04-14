@@ -17,6 +17,7 @@ plot_boxplots_parameters <- function(distribution_parameters, true_theta, remove
                                      size_tag = 4, num_col = length(true_theta$p), match_symbol = "^p[[:digit:]]+|mu|sigma|sd") {
 
   # format true theta values, according to their use
+  true_theta <- true_theta %>% enforce_identifiability()
   formatted_true_theta <- format_theta_output(true_theta)
   true_theta_df <- tibble::tibble(
     name_parameter = names(unlist(formatted_true_theta)) %>%
@@ -100,7 +101,7 @@ plot_boxplots_parameters <- function(distribution_parameters, true_theta, remove
 plot_ellipses_bivariate <- function(distribution_parameters, true_theta, alpha = 0.05, npoints = 500) {
 
   # generate ellipses with the true parameters
-  k <- length(true_theta$p)
+  true_theta <- true_theta %>% enforce_identifiability();   k <- length(true_theta$p)
   true_theta_mean <- purrr::map_dfr(1:k, ~ tibble::tibble(x = true_theta$mu[1, .x], y = true_theta$mu[2, .x], component = as.character(.x)))
   ellipse_standard_data <- purrr::map_dfr(1:k, function(j) {
     true_theta_per_component <- list(p = true_theta$p[j], mu = true_theta$mu[, j], sigma = true_theta$sigma[, , j])
@@ -249,7 +250,7 @@ plot_multi_parametrisation <- function(theta) {
 plot_Hellinger <- function(distribution_parameters, true_theta, num_col = length(true_theta$p)) {
 
   # format the data
-  k <- length(true_theta$p)
+  k <- length(true_theta$p); true_theta <- true_theta %>% enforce_identifiability()
   distribution_parameters_list <- distribution_parameters %>%
     tidyr::pivot_longer(dplyr::matches("^p[[:digit:]]+|mu|sigma|sd"),
       names_to = "name_parameter",
@@ -466,6 +467,7 @@ plot_univariate_normal_density_distribution <- function(true_theta, nobservation
 plot_bivariate_normal_density_distribution <- function(true_theta, nobservations = 1000, k = length(true_theta$p)) {
 
   # compute centroids and 95% confidence intervals
+  true_theta <- true_theta %>% enforce_identifiability()
   theta_mean <- purrr::map_dfr(1:k, ~ tibble::tibble(x = true_theta$mu[1, .x], y = true_theta$mu[2, .x], component = as.character(.x)))
   ellipse_standard_data <- purrr::map_dfr(1:k, function(j) {
     theta_per_component <- list(p = true_theta$p[j], mu = true_theta$mu[, j], sigma = true_theta$sigma[, , j])
@@ -520,6 +522,7 @@ plot_bivariate_normal_density_distribution <- function(true_theta, nobservations
 plot_HD_density_distribution <- function(true_theta, nobservations = 10^3,
                                          k = length(true_theta$p), ade_plot=FALSE) {
 
+  true_theta <- true_theta %>% enforce_identifiability()
   mypalette <- rainbow(k); D <- nrow(true_theta$mu)
   tibble_dataset <- purrr::map_dfr(1:k, function(j) {
     x_per_component <- MASS::mvrnorm(n = nobservations, mu = true_theta$mu[,j],
@@ -572,7 +575,8 @@ plot_HD_density_distribution <- function(true_theta, nobservations = 10^3,
       labs(title = "Bivariate factor analysis projection",
            subtitle = "Scree plot") +
       theme(plot.title = element_text(size = 20, face = 'bold', hjust = 0.5, vjust = -0.1),
-            plot.subtitle = element_text(size = 16, face = 'italic'))
+            plot.subtitle = element_text(size = 16, face = 'italic')) +
+      ylim(0, 100)
 
 
     indiv_plot <- factoextra::fviz_pca_biplot(pca1, # Individuals
@@ -611,7 +615,7 @@ plot_HD_density_distribution <- function(true_theta, nobservations = 10^3,
   }
 
   # generate parallel distribution plots
-  sampled_tibble_dataset <- tibble_dataset %>% dplyr::slice_sample(n=50)
+  sampled_tibble_dataset <- tibble_dataset %>% dplyr::slice_sample(n=100)
   parallel_plot_unscaled <- GGally::ggparcoord(sampled_tibble_dataset, showPoints = T,
                                                columns = 1:D, groupColumn = D + 1, scale="globalminmax", alphaLines = 0.3) +
     scale_color_discrete(type=mypalette) +
