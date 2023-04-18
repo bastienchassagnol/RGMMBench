@@ -142,7 +142,7 @@ test_that("HD visualisation", {
 
   HD_hellinger <- plot_Hellinger(HD_parameters_distribution %>% filter(ID == 1), true_theta = true_theta)
 
-  correlation_scores <- plot_correlation_Heatmap(HD_parameters_distribution %>% filter(ID == 1))
+  correlation_scores <- plot_correlation_Heatmap(HD_parameters_distribution %>% filter(ID == 1), row_km = 4)
 
 
   HD_density_distribution <- plot_HD_density_distribution(true_theta, nobservations = 200)

@@ -672,10 +672,11 @@ plot_HD_density_distribution <- function(true_theta, nobservations = 10^3,
 #'
 #' @param distribution_parameters A tibble with the distribution of the parameters,
 #' in the long format
+#' @param row_km The number of splits to carry on, by default set to 1
 #'
 #' @export
 
-plot_correlation_Heatmap <- function(distribution_parameters) {
+plot_correlation_Heatmap <- function(distribution_parameters, row_km = 1) {
   # format the data
   distribution_parameters_long <- distribution_parameters %>%
     tidyr::pivot_longer(dplyr::matches("^p[[:digit:]]+|mu|sigma|sd"),
@@ -700,8 +701,9 @@ plot_correlation_Heatmap <- function(distribution_parameters) {
   total_correlation_scores_plots <- Map(function(cor_matrix, init_method) {
     complex_heatmap <- ComplexHeatmap::Heatmap(cor_matrix,
       name = "mat", heatmap_legend_param = list(title = ""),
-      cluster_rows = TRUE, row_names_gp = grid::gpar(fontsize = 8), row_labels = colnames(cor_matrix),
-      row_title_gp = grid::gpar(fontsize = 4), column_names_rot = 45,
+      cluster_rows = TRUE, row_names_gp = grid::gpar(fontsize = 8),
+      row_labels = colnames(cor_matrix), row_km = row_km, row_km_repeats = 100,
+      row_title_gp = grid::gpar(fontsize = 4), column_names_rot = 45, column_km = row_km, column_km_repeats = 100,
       cluster_columns = TRUE, column_names_gp = grid::gpar(fontsize = 8), column_labels = colnames(cor_matrix),
       width = unit(8, "cm"), height = unit(8, "cm"), column_title = init_method
     )
