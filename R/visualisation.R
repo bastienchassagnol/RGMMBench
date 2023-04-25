@@ -586,13 +586,16 @@ plot_HD_density_distribution <- function(true_theta, nobservations = 10^3,
                     repel = TRUE, addEllipses = TRUE, ellipse.level=0.95, # Variables
                     col.var = "contrib", gradient.cols = c("blue", "white", "red"), geom.var = "arrow",
                     ggtheme = theme_bw())+
-      labs(fill = "Clusters", color = "Contribution", title = "Bivariate factor analysis projection")+ # Change legend title
+      labs(fill = "Clusters", color = "Contribution")+ # Change legend title
       theme(axis.title = element_text(size = 14, face = 'bold'),
             axis.text = element_text(size = 14, face = 'bold'),
-            plot.title = element_text(size = 20, face = 'bold', hjust = 0.5, vjust = -0.1)) +
+            plot.subtitle = element_blank(), plot.title = element_blank()) +
       # hrbrthemes::theme_ipsum()+
-      coord_fixed() +
-      theme(plot.subtitle = element_text(size = 16, face = 'italic'))
+      coord_fixed()
+
+
+    # plot.subtitle = element_text(size = 16, face = 'italic')
+    # plot.title = element_text(size = 20, face = 'bold', hjust = 0.5, vjust = -0.1)
     #
     # HD_dp <- cowplot::plot_grid(eigen_plot, indiv_plot,nrow=2, align = "hv", axis = "tblr")
 
@@ -621,10 +624,8 @@ plot_HD_density_distribution <- function(true_theta, nobservations = 10^3,
     scale_color_discrete(type=mypalette) +
     # hrbrthemes::theme_ipsum()+
     theme_bw() +
-    labs(title = "Parallel Coordinate Plot") +
     xlab("Dimensions") + ylab("Parallel simulated coordinates") +
-    theme(plot.title = element_text(size = 20, face = 'bold', hjust = 0.5, vjust=-0.1),
-          plot.subtitle = element_text(size = 16, face = 'italic'))
+    theme(plot.subtitle = element_blank(), plot.title = element_blank())
 
 
   # parallel_plot_scaled <- GGally::ggparcoord(sampled_tibble_dataset, showPoints = T,
@@ -647,7 +648,7 @@ plot_HD_density_distribution <- function(true_theta, nobservations = 10^3,
                                    labs(tag = "A"),
                                  parallel_plot_unscaled+ theme(plot.tag = element_text(size=24, face = "bold",
                                                                               vjust = 1.5, hjust=-0.5)) + labs(tag = "B"),
-                                 ncol=2, align = "hv", axis="tblr", rel_widths = c(0.8, 1))
+                                 ncol=2, align = "hv", axis="tblr", rel_widths = c(0.6, 1))
 
   # final_dp <- cowplot::plot_grid(HD_dp + theme(plot.tag = element_text(size=24, face = "bold")) + labs(tag = "A") +
   #                                  labs(title = "Individual and variable projection"),
