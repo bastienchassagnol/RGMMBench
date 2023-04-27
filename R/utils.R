@@ -406,6 +406,8 @@ is_integer <- function(x) {
 #' \eqn{\Sigma_{..l}, l \in \{ 1, \ldots, k\}} storing the covariance matrix of a given component,
 #' whose diagonal terms correspond to the variance of each variable, and off-terms diagonal elements return the covariance matrix
 #'
+#' @export
+#'
 #' @return a list of the estimates, uniquely identified, by ranking each component
 #' based on the ordering of their means
 
