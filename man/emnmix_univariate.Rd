@@ -15,8 +15,8 @@
 emnmix_univariate(
   x,
   k,
-  itmax = 5000,
-  epsilon = 10^-12,
+  epsilon = 10^-4,
+  itmax = 500,
   nstart = 10L,
   start = NULL,
   initialisation_algorithm = "kmeans",
@@ -27,8 +27,8 @@ em_Rmixmod_univariate(
   x = x,
   k = 2,
   initialisation_algorithm = "kmeans",
-  itmax = 5000,
-  epsilon = 10^-12,
+  epsilon = 10^-4,
+  itmax = 500,
   start = NULL,
   ...
 )
@@ -37,8 +37,8 @@ em_EMCluster_univariate(
   x = x,
   k = 2,
   initialisation_algorithm = "kmeans",
-  itmax = 5000,
-  epsilon = 10^-12,
+  epsilon = 10^-4,
+  itmax = 500,
   start = NULL,
   ...
 )
@@ -46,8 +46,8 @@ em_EMCluster_univariate(
 em_bgmm_univariate(
   x = x,
   k = 2,
-  itmax = 5000,
-  epsilon = 10^-12,
+  epsilon = 10^-4,
+  itmax = 500,
   initialisation_algorithm = "kmeans",
   start = NULL,
   ...
@@ -56,8 +56,8 @@ em_bgmm_univariate(
 em_flexmix_univariate(
   x = x,
   k = 2,
-  itmax = 5000,
-  epsilon = 10^-12,
+  epsilon = 10^-4,
+  itmax = 500,
   minprior = 0.05,
   initialisation_algorithm = "kmeans",
   start = NULL,
@@ -68,8 +68,8 @@ em_mixtools_univariate(
   x = x,
   k = 2,
   initialisation_algorithm = "kmeans",
-  itmax = 5000,
-  epsilon = 10^-12,
+  epsilon = 10^-4,
+  itmax = 500,
   start = NULL,
   ...
 )
@@ -79,8 +79,8 @@ em_mclust_univariate(
   k = 2,
   initialisation_algorithm = "kmeans",
   start = NULL,
-  itmax = 5000,
-  epsilon = 10^-12,
+  epsilon = 10^-4,
+  itmax = 500,
   ...
 )
 
@@ -89,8 +89,8 @@ em_GMKMcharlie_univariate(
   k = 2,
   initialisation_algorithm = "kmeans",
   embedNoise = 1e-06,
-  itmax = 5000,
-  epsilon = 10^-12,
+  epsilon = 10^-4,
+  itmax = 500,
   start = NULL,
   parallel = FALSE,
   ...
@@ -100,8 +100,8 @@ em_otrimle(
   x = x,
   k = 2,
   initialisation_algorithm = "kmeans",
-  itmax = 5000,
-  epsilon = 10^-12,
+  epsilon = 10^-4,
+  itmax = 500,
   ...
 )
 }
@@ -110,9 +110,9 @@ em_otrimle(
 
 \item{k}{the number of components}
 
-\item{itmax}{the maximal number of iterations to reach the threshold}
-
 \item{epsilon}{the criterion threshold considered as the tolerance between two consecutive log-likelihoods}
+
+\item{itmax}{the maximal number of iterations to reach the threshold}
 
 \item{start}{a list of initial estimates provided by the user, with 3 entries:
 \itemize{

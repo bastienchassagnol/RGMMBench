@@ -32,7 +32,7 @@ These functions are small chunks of code designed to decompose the computation o
 }
 \section{Functions}{
 \itemize{
-\item \code{predict_posterior_probability}: \code{predict_posterior_probability} returns the expected probability for each observation
+\item \code{predict_posterior_probability()}: \code{predict_posterior_probability} returns the expected probability for each observation
 to belong to any of the \eqn{k} clusters set a priori, given the estimated parameters
-}}
 
+}}

@@ -523,7 +523,7 @@ plot_HD_density_distribution <- function(true_theta, nobservations = 10^3,
                                          k = length(true_theta$p), ade_plot=FALSE) {
 
   true_theta <- true_theta %>% enforce_identifiability()
-  mypalette <- rainbow(k); D <- nrow(true_theta$mu)
+  mypalette <- grDevices::rainbow(k); D <- nrow(true_theta$mu)
   tibble_dataset <- purrr::map_dfr(1:k, function(j) {
     x_per_component <- MASS::mvrnorm(n = nobservations, mu = true_theta$mu[,j],
                                      Sigma = true_theta$sigma[, , j], empirical = FALSE)
@@ -534,7 +534,7 @@ plot_HD_density_distribution <- function(true_theta, nobservations = 10^3,
   })
 
 
-  pca1 <- ade4::dudi.pca(tibble_dataset %>% dplyr::select(-component),
+  pca1 <- ade4::dudi.pca(tibble_dataset %>% dplyr::select(-.data$component),
                          scannf = FALSE, nf = 2, center=FALSE, scale=FALSE)
 
   if (requireNamespace("adegraphics", quietly = TRUE) & ade_plot) {
@@ -547,7 +547,7 @@ plot_HD_density_distribution <- function(true_theta, nobservations = 10^3,
                         pellipses.col = mypalette,
                         starSize = 0, ppoints.cex = 0.2)
     var_plot <- adegraphics::s.corcircle(pca1$co,
-                            lab = names(tibble_dataset %>% dplyr::select(-component)),
+                            lab = names(tibble_dataset %>% dplyr::select(-.data$component)),
                             fullcircle = FALSE, plot = FALSE)
 
 

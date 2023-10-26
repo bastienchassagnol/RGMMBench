@@ -306,7 +306,8 @@ test_that("GMM estimation in supervised case", {
   )
 
   multivariate_simulation <- simulate_multivariate_GMM(theta = true_theta, n = 2000)
-  estimated_theta <- estimate_supervised_multivariate_GMM(multivariate_simulation$x, multivariate_simulation$s)
+  estimated_theta <- estimate_supervised_multivariate_GMM(multivariate_simulation$x,
+                                                          multivariate_simulation$s)
   # saveRDS(estimated_theta, test_path("fixtures", "two_component_3D_supervised_estimation.rds"))
   old_theta <- readRDS(test_path("fixtures", "two_component_3D_supervised_estimation.rds"))
   expect_equal(estimated_theta, old_theta)

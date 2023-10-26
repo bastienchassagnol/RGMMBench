@@ -4,11 +4,13 @@
 \alias{plot_correlation_Heatmap}
 \title{Plot Correlation Heatmap}
 \usage{
-plot_correlation_Heatmap(distribution_parameters)
+plot_correlation_Heatmap(distribution_parameters, row_km = 1)
 }
 \arguments{
 \item{distribution_parameters}{A tibble with the distribution of the parameters,
 in the long format}
+
+\item{row_km}{The number of splits to carry on, by default set to 1}
 }
 \description{
 For each configuration of parameter, compare the similarity between the packages

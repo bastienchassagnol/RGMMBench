@@ -7,10 +7,14 @@
 quadraticRoots(a, b, c)
 }
 \arguments{
-\item{c}{}
+\item{a}{quadratic parameter}
+
+\item{b}{parameter of order 1}
+
+\item{c}{intersect}
 }
 \value{
-
+the roots of a quadratic function
 }
 \description{
 Quadratic equation form of ax^2 + bx + c

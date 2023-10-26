@@ -7,10 +7,10 @@
 get_plot_limits(plot)
 }
 \arguments{
-\item{plota}{ggplot object}
+\item{plot}{a ggplot object}
 }
 \value{
-
+get limits within a plot
 }
 \description{
 Retrieve the limits of a package

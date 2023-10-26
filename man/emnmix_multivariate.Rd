@@ -18,8 +18,8 @@
 emnmix_multivariate(
   x,
   k,
-  itmax = 5000,
-  epsilon = 10^-12,
+  epsilon = 10^-4,
+  itmax = 500,
   nstart = 10L,
   start = NULL,
   initialisation_algorithm = "kmeans",
@@ -30,8 +30,8 @@ em_Rmixmod_multivariate(
   x = x,
   k = 2,
   initialisation_algorithm = "kmeans",
-  itmax = 5000,
-  epsilon = 10^-12,
+  epsilon = 10^-4,
+  itmax = 500,
   start = NULL,
   ...
 )
@@ -40,8 +40,8 @@ em_EMCluster_multivariate(
   x = x,
   k = 2,
   initialisation_algorithm = "kmeans",
-  itmax = 5000,
-  epsilon = 10^-12,
+  epsilon = 10^-4,
+  itmax = 500,
   start = NULL,
   ...
 )
@@ -49,8 +49,8 @@ em_EMCluster_multivariate(
 em_bgmm_multivariate(
   x = x,
   k = 2,
-  itmax = 5000,
-  epsilon = 10^-12,
+  epsilon = 10^-4,
+  itmax = 500,
   initialisation_algorithm = "kmeans",
   start = NULL,
   ...
@@ -59,8 +59,8 @@ em_bgmm_multivariate(
 em_flexmix_multivariate(
   x = x,
   k = 2,
-  itmax = 5000,
-  epsilon = 10^-12,
+  epsilon = 10^-4,
+  itmax = 500,
   minprior = 0.05,
   initialisation_algorithm = "kmeans",
   start = NULL,
@@ -71,8 +71,8 @@ em_mixtools_multivariate(
   x = x,
   k = 2,
   initialisation_algorithm = "kmeans",
-  itmax = 5000,
-  epsilon = 10^-12,
+  epsilon = 10^-4,
+  itmax = 500,
   start = NULL,
   ...
 )
@@ -82,8 +82,8 @@ em_mclust_multivariate(
   k = 2,
   initialisation_algorithm = "kmeans",
   start = NULL,
-  itmax = 5000,
-  epsilon = 10^-12,
+  epsilon = 10^-4,
+  itmax = 500,
   ...
 )
 
@@ -92,8 +92,8 @@ em_GMKMcharlie_multivariate(
   k = 2,
   initialisation_algorithm = "kmeans",
   embedNoise = 1e-06,
-  itmax = 5000,
-  epsilon = 10^-12,
+  epsilon = 10^-4,
+  itmax = 500,
   start = NULL,
   parallel = FALSE,
   ...
@@ -103,8 +103,8 @@ em_clustvarsel_multivariate(
   x = x,
   k = 2,
   initialisation_algorithm = "kmeans",
-  itmax = 5000,
-  epsilon = 10^-12,
+  epsilon = 10^-4,
+  itmax = 500,
   back_steps = 20,
   start = NULL,
   ...
@@ -114,8 +114,8 @@ em_HDclassif_multivariate(
   x = x,
   k = 2,
   initialisation_algorithm = "kmeans",
-  itmax = 5000,
-  epsilon = 10^-12,
+  epsilon = 10^-4,
+  itmax = 500,
   start = NULL,
   kmeans.control = list(iter.max = 200L, nstart = 10L, algorithm = "Hartigan-Wong"),
   mc.cores = getOption("mc.cores", parallel::detectCores())
@@ -125,8 +125,8 @@ em_pgmm_multivariate(
   x = x,
   k = 2,
   initialisation_algorithm = "kmeans",
-  itmax = 5000,
-  epsilon = 10^-12,
+  epsilon = 10^-4,
+  itmax = 500,
   aic_acc = 0.1,
   start = NULL,
   arguments_HDclassif = list(init = "kmeans", kmeans.control = list(iter.max = 200L,
@@ -139,8 +139,8 @@ em_EMMIXmfa_multivariate(
   k = 2,
   initialisation_algorithm = "kmeans",
   conv_measure = "diff",
-  itmax = 5000,
-  epsilon = 10^-12,
+  epsilon = 10^-4,
+  itmax = 500,
   start = NULL,
   nkmeans = 10L,
   arguments_HDclassif = list(init = "kmeans", kmeans.control = list(iter.max = 200L,
@@ -153,9 +153,9 @@ em_EMMIXmfa_multivariate(
 
 \item{k}{the number of components}
 
-\item{itmax}{the maximal number of iterations to reach the threshold}
-
 \item{epsilon}{the criterion threshold considered as the tolerance between two consecutive log-likelihoods}
+
+\item{itmax}{the maximal number of iterations to reach the threshold}
 
 \item{start}{a list of initial estimates provided by the user, with 3 entries:
 \itemize{

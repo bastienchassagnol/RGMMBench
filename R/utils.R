@@ -352,11 +352,11 @@ array_to_trig_mat <- function(x, transposed = TRUE) {
 #'
 #' Quadratic equation form of ax^2 + bx + c
 #'
-#' @param a
-#' @param b
-#' @param c
+#' @param a quadratic parameter
+#' @param b parameter of order 1
+#' @param c intersect
 #'
-#' @return
+#' @return the roots of a quadratic function
 #' @export
 
 quadraticRoots <- function(a, b, c) {
@@ -444,9 +444,9 @@ enforce_identifiability <- function(theta) {
 
 #' Retrieve the limits of a package
 #'
-#' @param plota ggplot object
+#' @param plot a ggplot object
 #'
-#' @return
+#' @return get limits within a plot
 
 get_plot_limits <- function(plot) {
   gb = ggplot_build(plot)

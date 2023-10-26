@@ -1200,12 +1200,12 @@ em_EMMIXmfa_multivariate <- function(x = x, k = 2, initialisation_algorithm = "k
 
   # the fit itself
   if (initialisation_algorithm== "kmeans") {
-    suppressWarnings(suppressMessages(invisible(capture.output(
+    suppressWarnings(suppressMessages(invisible(utils::capture.output(
       fit <- EMMIXmfa::mcfa(Y=x, g=k, q=d_j, itmax = itmax, nkmeans = 1,
                             tol = epsilon, conv_measure = conv_measure, warn_messages = FALSE)))))
   }
   else if (initialisation_algorithm== "random") {
-    suppressWarnings(suppressMessages(invisible(capture.output(
+    suppressWarnings(suppressMessages(invisible(utils::capture.output(
       fit <- EMMIXmfa::mcfa(Y=x, g=k, q=d_j, itmax = itmax, init_method = "rand-A", nrandom=10L,
                             tol = epsilon, conv_measure = conv_measure, warn_messages = FALSE, nkmeans = 1)))))
   }
@@ -1216,7 +1216,7 @@ em_EMMIXmfa_multivariate <- function(x = x, k = 2, initialisation_algorithm = "k
     post_proba <- predict_posterior_probability(x, start)$eta
     predicted_classes <- apply(post_proba, MARGIN = 1, which.max)
 
-    suppressWarnings(suppressMessages(invisible(capture.output(
+    suppressWarnings(suppressMessages(invisible(utils::capture.output(
       fit <- EMMIXmfa::mcfa(Y=x, g=k, q=d_j, itmax = itmax, init_clust = predicted_classes %>% as.factor(),
                             tol = epsilon, conv_measure = conv_measure, warn_messages = FALSE, nkmeans = 1)))))
   }

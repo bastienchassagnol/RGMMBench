@@ -125,7 +125,7 @@ benchmark_univariate_GMM_estimation <- function(mixture_functions, sigma_values,
             #################################################################
             ##     summarize results obtained per scenario configuration   ##
             #################################################################
-            iid_tibble_temp <- tibble::tibble(
+            id_tibble_temp <- tibble::tibble(
               ID = paste0(id_scenario, letter_id), OVL = balanced_ovl, entropy = entropy_value,
               OVL_pairwise = pairwise_ovl, nobservations = n, prop_outliers = 0,
               formatted_true_parameters = list(as.list(formatted_true_theta)),
@@ -148,8 +148,7 @@ benchmark_univariate_GMM_estimation <- function(mixture_functions, sigma_values,
             dir.create("./results", showWarnings = F, recursive = T)
             saveRDS(list(
               distribution = distribution_parameters_per_config,
-              local_scores = local_scores_temp,
-              config = id_tibble_temp),
+              local_scores = local_scores_temp),
               file.path("./results", paste0("ID_scenario_", paste0(id_scenario, letter_id), ".rds")))
           } # number of observations
           message(paste("Scenario", id_scenario, "has been achieved, with the whole setting of observations.\n"))
